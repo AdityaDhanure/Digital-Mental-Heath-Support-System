@@ -3,8 +3,11 @@
 // FILE: next.config.js (UPDATED)
 // ============================================
 /** @type {import('next').NextConfig} */
+import path from 'path';
+
 const nextConfig = {
   reactStrictMode: true,
+
   images: {
     remotePatterns: [
       {
@@ -13,14 +16,11 @@ const nextConfig = {
       },
     ],
   },
-  env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
-    NEXT_PUBLIC_AI_SERVICE_URL: process.env.NEXT_PUBLIC_AI_SERVICE_URL,
-  },
-  // Fix for hydration issues
-  experimental: {
-    optimizeCss: true,
-  },
-}
 
-module.exports = nextConfig
+  // Fix monorepo/workspace warning
+  turbopack: {
+    root: path.join(__dirname),
+  },
+};
+
+module.exports = nextConfig;
