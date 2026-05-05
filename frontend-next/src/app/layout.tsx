@@ -1,0 +1,69 @@
+// ============================================
+// SOLUTION 5: Fix Root Layout
+// FILE: src/app/layout.tsx (UPDATED)
+// ============================================
+import type { Metadata } from 'next';
+import { Inter, Poppins } from 'next/font/google';
+import './globals.css';
+import { Toaster } from 'react-hot-toast';
+import { Suspense } from 'react';
+
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+const poppins = Poppins({
+  weight: ['400', '600', '700'],
+  subsets: ['latin'],
+  variable: '--font-poppins',
+});
+
+export const metadata: Metadata = {
+  title: 'Mental Health Support System',
+  description: 'A comprehensive digital mental health platform for students',
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${inter.variable} ${poppins.variable} font-sans`} suppressHydrationWarning>
+        <Suspense fallback={<LoadingFallback />}>
+          {children}
+        </Suspense>
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: '#363636',
+              color: '#fff',
+            },
+            success: {
+              duration: 3000,
+              iconTheme: {
+                primary: '#10b981',
+                secondary: '#fff',
+              },
+            },
+            error: {
+              duration: 4000,
+              iconTheme: {
+                primary: '#ef4444',
+                secondary: '#fff',
+              },
+            },
+          }}
+        />
+      </body>
+    </html>
+  );
+}
+
+function LoadingFallback() {
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-primary-600"></div>
+    </div>
+  );
+}
