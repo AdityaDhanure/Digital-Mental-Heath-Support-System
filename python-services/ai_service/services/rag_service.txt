@@ -1,0 +1,288 @@
+# python-services/ai_service/services/rag_service.py
+
+import os
+from typing import List, Dict, Any, Optional
+import numpy as np
+from sentence_transformers import SentenceTransformer
+import faiss
+import pickle
+import logging
+
+logger = logging.getLogger(__name__)
+
+class RAGService:
+    """Retrieval-Augmented Generation service using FAISS"""
+    
+    def __init__(self):
+        self.embedding_model_name = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
+        self.index_path = os.getenv("VECTOR_INDEX_PATH", "./data/faiss_index")
+        self.metadata_path = os.getenv("METADATA_PATH", "./data/metadata.pkl")
+        self.dimension = 384  # Default for all-MiniLM-L6-v2
+        
+        self.embedding_model = None
+        self.index = None
+        self.documents = []
+
+# 1. ==================================================================================================================================== #               
+    async def initialize(self):
+        """Initialize the RAG service"""
+        try:
+            logger.info("Initializing RAG service...")
+            
+            # Load embedding model
+            self.embedding_model = SentenceTransformer(self.embedding_model_name)
+            self.dimension = self.embedding_model.get_sentence_embedding_dimension()
+            
+            logger.info(f"Loaded embedding model: {self.embedding_model_name}")
+            
+            # Load or create FAISS index
+            if os.path.exists(f"{self.index_path}.index"):
+                self.index = faiss.read_index(f"{self.index_path}.index")
+                logger.info(f"Loaded existing FAISS index with {self.index.ntotal} vectors")
+                
+                # Load metadata
+                if os.path.exists(self.metadata_path):
+                    with open(self.metadata_path, 'rb') as f:
+                        self.documents = pickle.load(f)
+                    logger.info(f"Loaded {len(self.documents)} document metadata")
+            else:
+                # Create new index
+                self.index = faiss.IndexFlatL2(self.dimension)
+                logger.info("Created new FAISS index")
+                
+                # Initialize with default mental health resources
+                await self._load_default_resources()
+            
+            logger.info("RAG service initialized successfully")
+            
+        except Exception as e:
+            logger.error(f"RAG initialization error: {str(e)}")
+            raise
+
+# 1. => a. ==================================================================================================== #            
+    async def _load_default_resources(self):
+        """Load default mental health resources"""
+        default_resources = [
+            {
+                "title": "Understanding Anxiety",
+                "content": "Anxiety is a natural response to stress. Common symptoms include increased heart rate, rapid breathing, restlessness, and difficulty concentrating. Coping strategies include deep breathing, grounding techniques, and progressive muscle relaxation.",
+                "category": "anxiety",
+                "type": "article"
+            },
+            {
+                "title": "Managing Academic Stress",
+                "content": "Academic stress is common among college students. Effective management includes: breaking tasks into smaller steps, maintaining a study schedule, taking regular breaks, seeking help when needed, and practicing self-care.",
+                "category": "stress",
+                "type": "guide"
+            },
+            {
+                "title": "Sleep Hygiene for Students",
+                "content": "Good sleep is essential for mental health. Tips include: maintain consistent sleep schedule, avoid screens before bed, create a comfortable sleep environment, limit caffeine intake, and establish a relaxing bedtime routine.",
+                "category": "sleep",
+                "type": "guide"
+            },
+            {
+                "title": "Mindfulness and Meditation",
+                "content": "Mindfulness involves being present in the moment without judgment. Benefits include reduced anxiety, improved focus, and better emotional regulation. Start with 5-10 minutes daily of focused breathing or body scan meditation.",
+                "category": "mindfulness",
+                "type": "exercise"
+            },
+            {
+                "title": "Recognizing Depression",
+                "content": "Depression symptoms include persistent sadness, loss of interest in activities, changes in appetite or sleep, fatigue, difficulty concentrating, and feelings of worthlessness. If experiencing these symptoms, seek professional help.",
+                "category": "depression",
+                "type": "article"
+            },
+            {
+                "title": "Building Resilience",
+                "content": "Resilience is the ability to bounce back from challenges. Build resilience through: maintaining social connections, practicing self-care, setting realistic goals, maintaining perspective, and learning from experiences.",
+                "category": "general-wellness",
+                "type": "guide"
+            },
+            {
+                "title": "Grounding Techniques",
+                "content": "The 5-4-3-2-1 technique helps manage anxiety: Identify 5 things you can see, 4 things you can touch, 3 things you can hear, 2 things you can smell, and 1 thing you can taste. This brings awareness to the present moment.",
+                "category": "coping-strategies",
+                "type": "exercise"
+            },
+            {
+                "title": "Social Anxiety Management",
+                "content": "Social anxiety involves fear of social situations. Management strategies include: gradual exposure to social situations, challenging negative thoughts, practicing relaxation techniques, and seeking support from counselors or support groups.",
+                "category": "anxiety",
+                "type": "guide"
+            }
+        ]
+        
+        await self.add_documents(default_resources)
+        logger.info(f"Loaded {len(default_resources)} default resources")
+
+# 2. ==================================================================================================================================== #  
+    async def add_documents(
+        self,
+        documents: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """
+        Add documents to the vector store
+        
+        Args:
+            documents: List of document dictionaries with 'content' field
+            
+        Returns:
+            Dict with operation results
+        """
+        try:
+            if not documents:
+                return {"count": 0, "status": "no documents provided"}
+            
+            # Extract text content
+            texts = [doc.get("content", "") for doc in documents]
+            
+            # Generate embeddings
+            embeddings = self.embedding_model.encode(
+                texts,
+                show_progress_bar=True,
+                convert_to_numpy=True
+            )
+            
+            # Add to FAISS index
+            self.index.add(embeddings.astype('float32'))
+            
+            # Store metadata
+            self.documents.extend(documents)
+            
+            # Save index and metadata
+            await self._save_index()
+            
+            logger.info(f"Added {len(documents)} documents to RAG store")
+            
+            return {
+                "count": len(documents),
+                "total_documents": len(self.documents),
+                "status": "success"
+            }
+            
+        except Exception as e:
+            logger.error(f"Document addition error: {str(e)}")
+            raise
+
+# 3. ====================================================================================================================================== # 
+    async def retrieve_context(
+        self,
+        query: str,
+        top_k: int = 3,
+        threshold: float = 0.7
+    ) -> Dict[str, Any]:
+        """
+        Retrieve relevant context for a query
+        
+        Args:
+            query: Search query
+            top_k: Number of results to return
+            threshold: Relevance threshold (0-1)
+            
+        Returns:
+            Dict with retrieved documents and scores
+        """
+        try:
+            # Generate query embedding
+            query_embedding = self.embedding_model.encode(
+                [query],
+                convert_to_numpy=True
+            )
+            
+            # Search FAISS index
+            distances, indices = self.index.search(
+                query_embedding.astype('float32'),
+                min(top_k, len(self.documents))
+            )
+            
+            # Convert distances to similarity scores (cosine similarity)
+            # FAISS L2 distance to similarity: similarity = 1 / (1 + distance)
+            similarities = 1 / (1 + distances[0])
+            
+            # Filter by threshold and prepare results
+            results = []
+            scores = []
+            
+            for idx, similarity in zip(indices[0], similarities):
+                if similarity >= threshold and idx < len(self.documents):
+                    results.append(self.documents[idx])
+                    scores.append(float(similarity))
+            
+            logger.info(f"Retrieved {len(results)} relevant documents for query")
+            
+            return {
+                "documents": results,
+                "scores": scores,
+                "query": query
+            }
+            
+        except Exception as e:
+            logger.error(f"Context retrieval error: {str(e)}")
+            return {
+                "documents": [],
+                "scores": [],
+                "query": query,
+                "error": str(e)
+            }
+
+# 4. ==================================================================================================================================== #  
+    async def search_by_category(
+        self,
+        category: str,
+        top_k: int = 5
+    ) -> List[Dict[str, Any]]:
+        """
+        Search documents by category
+        """
+        try:
+            results = [
+                doc for doc in self.documents
+                if doc.get("category", "").lower() == category.lower()
+            ]
+            
+            return results[:top_k]
+            
+        except Exception as e:
+            logger.error(f"Category search error: {str(e)}")
+            return []
+
+# 5. ==================================================================================================================================== #    
+    async def close(self):
+        """Cleanup resources"""
+        try:
+            await self._save_index()
+            logger.info("RAG service closed")
+        except Exception as e:
+            logger.error(f"RAG service cleanup error: {str(e)}")
+
+
+# 5. => a. ==================================================================================================== #    
+    async def _save_index(self):
+        """Save FAISS index and metadata to disk"""
+        try:
+            # Ensure directory exists
+            os.makedirs(os.path.dirname(self.index_path), exist_ok=True)
+            
+            # Save FAISS index
+            faiss.write_index(self.index, f"{self.index_path}.index")
+            
+            # Save metadata
+            with open(self.metadata_path, 'wb') as f:
+                pickle.dump(self.documents, f)
+            
+            logger.info("Saved index and metadata to disk")
+            
+        except Exception as e:
+            logger.error(f"Index save error: {str(e)}")
+
+
+# 6. ===================================================================================================================================== #    
+    def get_stats(self) -> Dict[str, Any]:
+        """Get RAG service statistics"""
+        return {
+            "total_documents": len(self.documents),
+            "index_size": self.index.ntotal if self.index else 0,
+            "embedding_dimension": self.dimension,
+            "model": self.embedding_model_name
+        }

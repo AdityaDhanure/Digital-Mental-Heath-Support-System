@@ -1,0 +1,34 @@
+# python-services/requirements.txt
+
+# FastAPI Framework
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+
+# LangChain & LLM
+langchain
+langchain_google_genai
+langchain_community
+openai
+tiktoken
+
+# Vector Store & Embeddings
+faiss-cpu
+sentence-transformers
+
+# NLP & ML Models
+transformers
+torch
+numpy
+
+# Sentiment & Safety
+nltk
+
+# Utilities
+python-dotenv
+httpx
+aiofiles
+
+# Monitoring & Logging
+python-json-logger
