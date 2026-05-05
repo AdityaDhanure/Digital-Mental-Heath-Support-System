@@ -20,12 +20,12 @@ export default function ResourceMeta({ resource }: ResourceMetaProps) {
             <UserIcon className="h-5 w-5 text-purple-500" />
             Author
           </h2>
-          <p className="font-semibold text-gray-900">{resource.author.name}</p>
-          {resource.author.credentials && (
-            <p className="text-sm text-gray-600 mt-0.5">{resource.author.credentials}</p>
+          <p className="font-semibold text-gray-900">{resource.author?.name}</p>
+          {resource.author?.credentials && (
+            <p className="text-sm text-gray-600 mt-0.5">{resource.author?.credentials}</p>
           )}
-          {resource.author.organization && (
-            <p className="text-sm text-gray-500">{resource.author.organization}</p>
+          {resource.author?.organization && (
+            <p className="text-sm text-gray-500">{resource.author?.organization}</p>
           )}
         </div>
       )}
@@ -53,12 +53,12 @@ export default function ResourceMeta({ resource }: ResourceMetaProps) {
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           <h2 className="text-lg font-bold text-gray-900 mb-2">Source</h2>
           <a
-            href={resource.externalSource.url}
+            href={resource.externalSource?.url}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 text-purple-600 hover:text-purple-800 font-medium text-sm"
           >
-            ↗ {resource.externalSource.name || 'View original source'}
+            ↗ {resource.externalSource?.name || 'View original source'}
           </a>
         </div>
       )}
