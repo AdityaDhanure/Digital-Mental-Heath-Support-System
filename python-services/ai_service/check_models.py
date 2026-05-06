@@ -1,11 +1,22 @@
 import os
+import sys
+from pathlib import Path
 from dotenv import load_dotenv
 import google.generativeai as genai
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent))
 
 # Load your .env file
 load_dotenv()
 
-api_key = os.getenv("NEW_GOOGLE_API_KEY")
+from config.settings import settings
+
+api_key = settings.GOOGLE_API_KEY
+if not api_key:
+    print("❌ Error: GOOGLE_API_KEY not set in environment variables")
+    exit(1)
+
 genai.configure(api_key=api_key)
 
 print(f"Checking models for key ending in: ...{api_key[-5:]}")

@@ -1,5 +1,5 @@
 // FILE: src/lib/api/chat.ts
-import { apiClient } from './axios';
+import apiClient from './axios';
 import { ChatMessage } from '@/types/chat.types';
 
 export interface ChatResponse {

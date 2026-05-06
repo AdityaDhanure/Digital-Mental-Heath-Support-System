@@ -9,21 +9,28 @@ class Settings(BaseSettings):
     PORT: int = int(os.getenv("PORT", "8001"))
     DEBUG: bool = os.getenv("DEBUG", "True").lower() == "true"
 
-    # ✅ CHANGE THIS
-    ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:5000"
+    # CORS - Read from .env file
+    ALLOWED_ORIGINS: str = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5000")
 
-    # LLM
+    # LLM - All read from .env file
     GOOGLE_API_KEY: str = os.getenv("GOOGLE_API_KEY", "")
-    LLM_MODEL: str = "gemini-flash-latest"
-    LLM_TEMPERATURE: float = 0.7
-    LLM_MAX_TOKENS: int = 1000
+    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+    DEEPSEEK_API_KEY: str = os.getenv("DEEPSEEK_API_KEY", "")
+    HUGGINGFACE_API_TOKEN: str = os.getenv("HUGGINGFACEHUB_API_TOKEN", "")
+    
+    LLM_MODEL: str = os.getenv("LLM_MODEL", "gemini-flash-latest")
+    LLM_TEMPERATURE: float = float(os.getenv("LLM_TEMPERATURE", "0.7"))
+    LLM_MAX_TOKENS: int = int(os.getenv("LLM_MAX_TOKENS", "1000"))
 
-    EMBEDDING_MODEL: str = "models/embedding-001"
+    # Embedding - Read from .env file
+    EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
 
-    VECTOR_INDEX_PATH: str = "./data/faiss_index.index"
-    METADATA_PATH: str = "./data/metadata.pkl"
+    # Vector Store - Read from .env file
+    VECTOR_INDEX_PATH: str = os.getenv("VECTOR_INDEX_PATH", "./data/faiss_index.index")
+    METADATA_PATH: str = os.getenv("METADATA_PATH", "./data/metadata.pkl")
 
-    CRISIS_ALERT_THRESHOLD: float = 7.0
+    # Safety - Read from .env file
+    CRISIS_ALERT_THRESHOLD: float = float(os.getenv("CRISIS_ALERT_THRESHOLD", "7.0"))
 
     model_config = SettingsConfigDict(
         env_file=".env",

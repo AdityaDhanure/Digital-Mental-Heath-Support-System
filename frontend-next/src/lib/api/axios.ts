@@ -3,15 +3,14 @@
 // ============================================
 import axios from 'axios';
 import { useAuthStore } from '@/store/authStore';
+import { API_CONFIG } from '@/lib/config/env';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-
-export const apiClient = axios.create({
-  baseURL: API_URL,
+const apiClient = axios.create({
+  baseURL: API_CONFIG.API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 30000,  // 30 seconds
+  timeout: API_CONFIG.TIMEOUT,  // 30 seconds
 });
 
 // Request interceptor to add auth token
@@ -43,7 +42,7 @@ apiClient.interceptors.response.use(
       try {
         const refreshToken = localStorage.getItem('refresh_token');
         if (refreshToken) {
-          const response = await axios.post(`${API_URL}/auth/refresh`, {
+          const response = await axios.post(`${API_CONFIG.API_URL}/auth/refresh`, {
             refreshToken,
           });
 

@@ -10,7 +10,7 @@ import pickle
 import logging
 import tempfile
 import shutil
-import asyncio
+from config.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -18,9 +18,9 @@ class RAGService:
     """Retrieval-Augmented Generation service using FAISS"""
     
     def __init__(self):
-        self.embedding_model_name = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
-        self.index_path = os.getenv("VECTOR_INDEX_PATH", "./data/faiss_index")
-        self.metadata_path = os.getenv("METADATA_PATH", "./data/metadata.pkl")
+        self.embedding_model_name = settings.EMBEDDING_MODEL
+        self.index_path = settings.VECTOR_INDEX_PATH
+        self.metadata_path = settings.METADATA_PATH
         self.dimension = 384  # Default for all-MiniLM-L6-v2
         
         self.embedding_model = None

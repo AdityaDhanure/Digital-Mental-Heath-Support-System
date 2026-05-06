@@ -23,15 +23,36 @@ import notificationRoutes from './routes/notificationRoutes.js';
 import errorMiddleware from './middleware/errorMiddleware.js';
 import rateLimitMiddleware from './middleware/rateLimitMiddleware.js';
 import logger from './utils/logger.js';
+import { CORS_CONFIG } from './config/env.js';
 
 const app = express();
 
+// CORS Configuration - Allow multiple origins
+const allowedOrigins = CORS_CONFIG.getOriginsList();
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or Postman)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin is allowed
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      // Log rejected origin
+      logger.warn(`CORS blocked request from origin: ${origin}`);
+      callback(new Error(`CORS policy: origin ${origin} not allowed`), false);
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200
+};
+
 // Security Middleware
 app.use(helmet()); // Set security headers
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true
-}));
+app.use(cors(corsOptions));
 app.use(mongoSanitize()); // Prevent NoSQL injection
 app.use(xss()); // Prevent XSS attacks
 

@@ -1,5 +1,6 @@
 // FILE: src/lib/api/admin.ts
 import apiClient from './axios';
+import { API_CONFIG } from '@/lib/config/env';
 
 export const adminAPI = {
   getDashboardStats: async (params?: { startDate?: string; endDate?: string }) => {
@@ -64,10 +65,9 @@ export const adminAPI = {
   },
 
   downloadReport: async (reportType: string, startDate?: string, endDate?: string) => {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
     const token = localStorage.getItem('auth_token');
     
-    const response = await fetch(`${API_URL}/admin/analytics/generate-report`, {
+    const response = await fetch(`${API_CONFIG.API_URL}/admin/analytics/generate-report`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -4,6 +4,7 @@ import re
 from typing import Dict, List, Any
 import logging
 from transformers import pipeline
+from config.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +35,7 @@ class SafetyService:
     def __init__(self):
         self.sentiment_analyzer = None
         self.emotion_classifier = None
+        self.crisis_alert_threshold = settings.CRISIS_ALERT_THRESHOLD
         
         # Crisis keywords — uses CONFIRMED intent patterns (not just keywords)
         # Patterns are written to require actual intent signals, not just the root word.

@@ -6,8 +6,9 @@ import app from './src/app.js';
 import connectDB from './src/config/database.js';
 import logger from './src/utils/logger.js';
 import { verifyEmailConnection } from './src/services/emailService.js';
+import { SERVER_CONFIG } from './src/config/env.js';
 
-const PORT = process.env.PORT || 5000;
+const PORT = SERVER_CONFIG.PORT;
 
 // Connect to Database
 connectDB();
@@ -15,7 +16,7 @@ connectDB();
 // Start Server
 const server = app.listen(PORT, async () => {
   logger.info(`🚀 Mental Health Backend Server running on port ${PORT}`);
-  logger.info(`📅 Environment: ${process.env.NODE_ENV || 'development'}`);
+  logger.info(`📅 Environment: ${SERVER_CONFIG.NODE_ENV}`);
   
   // Verify Email Connection
   await verifyEmailConnection();

@@ -2,19 +2,20 @@
 
 import nodemailer from 'nodemailer';
 import logger from '../utils/logger.js';
+import { EMAIL_CONFIG, CORS_CONFIG } from '../config/env.js';
 
 const SMTP_CONFIG = {
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.SMTP_PORT || '587'),
+  host: EMAIL_CONFIG.SMTP_HOST,
+  port: EMAIL_CONFIG.SMTP_PORT,
   secure: false,
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
+    user: EMAIL_CONFIG.SMTP_USER,
+    pass: EMAIL_CONFIG.SMTP_PASS,
   },
 };
 
 const APP_NAME = 'MindfulCampus';
-const FROM_ADDRESS = `"${APP_NAME}" <${process.env.SMTP_USER}>`;
+const FROM_ADDRESS = `"${APP_NAME}" <${EMAIL_CONFIG.SMTP_USER}>`;
 const BRAND_COLOR = '#7c3aed';
 const BRAND_LIGHT = '#f5f3ff';
 
@@ -140,7 +141,7 @@ export async function sendNotificationEmail(email, name, notification) {
 
   const actionButtonHtml = actionUrl ? `
     <div style="text-align:center;margin:28px 0;">
-      <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}${actionUrl}"
+      <a href="${CORS_CONFIG.FRONTEND_URL || 'http://localhost:3000'}${actionUrl}"
          style="display:inline-block;background:${BRAND_COLOR};color:#ffffff;text-decoration:none;
                 padding:13px 32px;border-radius:10px;font-weight:600;font-size:15px;">
         ${actionLabel || 'View Details'} →

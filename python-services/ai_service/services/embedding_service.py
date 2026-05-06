@@ -5,6 +5,7 @@ from typing import List
 import logging
 import asyncio
 import numpy as np
+from config.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +13,7 @@ class EmbeddingService:
     """Service for generating text embeddings"""
     
     def __init__(self):
-        self.model_name = "all-MiniLM-L6-v2"
+        self.model_name = settings.EMBEDDING_MODEL
         self.model = SentenceTransformer(self.model_name)
         logger.info(f"Loaded embedding model: {self.model_name}")
 

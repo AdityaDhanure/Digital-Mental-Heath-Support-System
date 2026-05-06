@@ -2,13 +2,14 @@
 
 import pkg from 'jsonwebtoken';
 import logger  from './logger.js';
+import { AUTH_CONFIG } from '../config/env.js';
 
 const { sign, verify, decode } = pkg;
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-here';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
-const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || 'your-refresh-secret-key';
-const REFRESH_TOKEN_EXPIRES_IN = process.env.REFRESH_TOKEN_EXPIRES_IN || '7d';
+const JWT_SECRET = AUTH_CONFIG.JWT_SECRET;
+const JWT_EXPIRES_IN = AUTH_CONFIG.JWT_EXPIRES_IN;
+const REFRESH_TOKEN_SECRET = AUTH_CONFIG.REFRESH_TOKEN_SECRET;
+const REFRESH_TOKEN_EXPIRES_IN = AUTH_CONFIG.REFRESH_TOKEN_EXPIRES_IN;
 
 /**
  * Generate JWT access token

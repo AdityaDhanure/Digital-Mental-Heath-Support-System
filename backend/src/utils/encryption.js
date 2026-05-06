@@ -1,9 +1,10 @@
 // src/utils/encryption.js - COMPLETELY FIXED
 
 import crypto from 'crypto';
+import { SECURITY_CONFIG } from '../config/env.js';
 
 const ALGORITHM = 'aes-256-gcm';
-const KEY = Buffer.from(process.env.ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex'), 'hex');
+const KEY = Buffer.from(SECURITY_CONFIG.ENCRYPTION_KEY, 'hex');
 const IV_LENGTH = 16;
 const SALT_LENGTH = 64;
 const TAG_LENGTH = 16;
@@ -11,7 +12,7 @@ const TAG_POSITION = SALT_LENGTH + IV_LENGTH;
 const ENCRYPTED_POSITION = TAG_POSITION + TAG_LENGTH;
 
 // FIXED: Consistent user token generation
-const USER_TOKEN_SECRET = process.env.USER_TOKEN_SECRET || 'default-user-token-secret-change-in-production';
+const USER_TOKEN_SECRET = SECURITY_CONFIG.USER_TOKEN_SECRET;
 
 /**
  * Create anonymized user token (for chat privacy)

@@ -9,8 +9,9 @@ import { catchAsync } from '../middleware/errorMiddleware.js';
 import logger from '../utils/logger.js';
 import axios from 'axios';
 import { createAnonymizedToken } from '../utils/encryption.js';
+import { SERVICES_CONFIG } from '../config/env.js';
 
-const ANALYTICS_SERVICE_URL = process.env.ANALYTICS_SERVICE_URL || 'http://localhost:8002';
+const ANALYTICS_SERVICE_URL = SERVICES_CONFIG.ANALYTICS_SERVICE_URL;
 
 export const getDashboardStats = catchAsync(async (req, res) => {
   const { startDate, endDate } = req.query;
@@ -433,7 +434,7 @@ export const getSystemHealth = catchAsync(async (req, res) => {
   // Check Python AI service
   let aiServiceStatus = { status: 'unknown' };
   try {
-    const aiHealth = await axios.get(`${process.env.AI_SERVICE_URL}/health`, {
+    const aiHealth = await axios.get(`${SERVICES_CONFIG.AI_SERVICE_URL}/health`, {
       timeout: 5000
     });
     aiServiceStatus = {

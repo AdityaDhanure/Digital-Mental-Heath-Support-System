@@ -7,6 +7,7 @@ import { Inter, Poppins } from 'next/font/google';
 import './globals.css';
 import { Toaster } from 'react-hot-toast';
 import { Suspense } from 'react';
+import { APP_CONFIG } from '@/lib/config/env';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const poppins = Poppins({
@@ -16,8 +17,8 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: 'Mental Health Support System',
-  description: 'A comprehensive digital mental health platform for students',
+  title: APP_CONFIG.TITLE,
+  description: APP_CONFIG.DESCRIPTION,
 };
 
 export default function RootLayout({

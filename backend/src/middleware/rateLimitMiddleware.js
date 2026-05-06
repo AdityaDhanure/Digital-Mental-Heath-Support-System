@@ -4,16 +4,17 @@ import { rateLimit } from 'express-rate-limit';
 import RedisStore from 'rate-limit-redis';
 import logger from '../utils/logger.js';
 import { createClient } from 'redis';
+import { RATE_LIMIT_CONFIG, SERVICES_CONFIG } from '../config/env.js';
 
 // Create Redis client (optional, for distributed systems)
 let redisClient = null;
 
 const initializeRedis = async () => {
-  if (process.env.REDIS_URL) {
+  if (SERVICES_CONFIG.REDIS_URL) {
     try {
       // Create a temporary client instance
       const client = createClient({
-        url: process.env.REDIS_URL,
+        url: SERVICES_CONFIG.REDIS_URL,
         socket: {
           connectTimeout: 5000,
           reconnectStrategy: false
@@ -59,8 +60,8 @@ const getStore = (prefix) => {
 
 // General API rate limiter
 const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 500, // Limit each IP to 500 requests per windowMs (increased for dashboard usage)
+  windowMs: RATE_LIMIT_CONFIG.WINDOW_MS,
+  max: RATE_LIMIT_CONFIG.MAX_REQUESTS,
   message: {
     status: 'error',
     message: 'Too many requests from this IP, please try again later.',
