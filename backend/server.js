@@ -14,7 +14,7 @@ const PORT = SERVER_CONFIG.PORT;
 connectDB();
 
 // Start Server
-const server = app.listen(PORT, async () => {
+const server = app.listen(PORT, '0.0.0.0', async () => {
   logger.info(`🚀 Mental Health Backend Server running on port ${PORT}`);
   logger.info(`📅 Environment: ${SERVER_CONFIG.NODE_ENV}`);
   
