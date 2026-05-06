@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import field_validator
 import os
 
 class Settings(BaseSettings):
@@ -12,7 +13,7 @@ class Settings(BaseSettings):
     ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:5000"
 
     # LLM
-    GOOGLE_API_KEY: str = os.getenv("NEW_GOOGLE_API_KEY", "")
+    GOOGLE_API_KEY: str = os.getenv("GOOGLE_API_KEY", "")
     LLM_MODEL: str = "gemini-flash-latest"
     LLM_TEMPERATURE: float = 0.7
     LLM_MAX_TOKENS: int = 1000
@@ -30,6 +31,13 @@ class Settings(BaseSettings):
         case_sensitive=True,
         extra="ignore"
     )
+
+    @field_validator("GOOGLE_API_KEY")
+    @classmethod
+    def validate_api_key(cls, v):
+        if not v or v.strip() == "":
+            raise ValueError("GOOGLE_API_KEY environment variable must be set")
+        return v
 
     # ✅ ADD THIS HELPER
     @property

@@ -78,10 +78,8 @@ Help students feel heard and understood. Be a calm, non-judgmental presence that
         Generate AI response using LangChain with optional RAG and safety context
         """
 
-        print("Hellloeeeeeeeeeeeeeee before try:.....")
         try:
             messages = [SystemMessage(content=self.system_prompt)]
-            print("Hellloeeeeeeeeeeeeeee after messages:.....")
 
             # ---- Conversation history (last 8 messages max) ----
             if conversation_history:
@@ -92,7 +90,6 @@ Help students feel heard and understood. Be a calm, non-judgmental presence that
                         messages.append(HumanMessage(content=content))
                     elif role == "assistant":
                         messages.append(AIMessage(content=content))
-            print("Hellloeeeeeeeeeeeeeee after history:.....")
 
             # ---- RAG context (short & focused) ----
             if rag_context:
@@ -100,14 +97,12 @@ Help students feel heard and understood. Be a calm, non-judgmental presence that
                     f"- {doc.get('title', 'Resource')}: {doc.get('content', '')[:300]}"
                     for doc in rag_context[:3]
                 )
-                print("Hellloeeeeeeeeeeeeeee inside rag_context:.....")
 
                 user_message = (
                     f"Relevant information:\n{context_snippets}\n\n"
                     f"User message: {user_message}"
                 )
 
-            print("Hellloeeeeeeeeeeeeeee after rag_context:.....")
             # ---- Safety hint for confirmed high/critical risk only ----
             risk_level = safety_context.get("risk_level", "low") if safety_context else "low"
             negation = safety_context.get("negation_detected", False) if safety_context else False
@@ -121,7 +116,6 @@ Help students feel heard and understood. Be a calm, non-judgmental presence that
 
             messages.append(HumanMessage(content=user_message))
 
-            print("Hellloeeeeeeeeeeeeeee before LLM call:.....")
             # ---- LLM call ----
             response = await self.llm.ainvoke(messages)   # asynchronous call
             
@@ -135,7 +129,6 @@ Help students feel heard and understood. Be a calm, non-judgmental presence that
                 # It is already a string (or simpler object)
                 final_text = str(content)
 
-            print("Hellloeeeeeeeeeeeeeee before post response:.....")
             # ---- Safety post-processing ----
             final_response = self._post_process_response(final_text, safety_context)
 
@@ -170,7 +163,6 @@ Help students feel heard and understood. Be a calm, non-judgmental presence that
         negation = safety_context.get("negation_detected", False) if safety_context else False
         has_protective = safety_context.get("has_protective_factors", False) if safety_context else False
 
-        print("Hellloeeeeeeeeeeeeeee before appending crisis resources:.....")
         # Only append crisis resources for confirmed high/critical intent
         if risk_level in {"high", "critical"} and not negation and not has_protective:
             response += (
