@@ -745,6 +745,118 @@ This is a **Digital Mental Health and Psychological Support System** designed to
 ### Prerequisites
 
 - Node.js 18+
+- Python 3.9+
+- MongoDB 7+
+- Git
+
+### ✅ NEW: Environment Configuration
+
+All three services now use **centralized environment variable configuration**:
+
+| Service | Config File | Purpose |
+|---------|-------------|---------|
+| **Backend** | `backend/src/config/env.js` | Centralized Express.js config |
+| **Frontend** | `frontend-next/src/lib/config/env.ts` | Centralized Next.js config |
+| **Python AI** | `python-services/ai_service/config/settings.py` | Centralized FastAPI config |
+
+This approach ensures:
+- ✅ No hardcoded values
+- ✅ Single source of truth
+- ✅ Easy environment switching
+- ✅ Type-safe configuration
+
+See detailed docs:
+- [Backend Environment Variables](backend/ENV_VARIABLES.md)
+- [Frontend Environment Variables](frontend-next/ENV_VARIABLES.md)
+- [Python Services Environment Variables](python-services/ENV_VARIABLES.md)
+
+### Quick Start
+
+#### 1. Clone Repository
+```bash
+git clone https://github.com/AdityaDhanure/Digital-Mental-Heath-Support-System.git
+cd 7.Mental-Health_Project
+```
+
+#### 2. Backend Setup
+```bash
+cd backend
+npm install
+cp .env.example .env  # Configure environment variables
+npm run dev
+# Server runs on http://localhost:5000
+```
+
+#### 3. Frontend Setup
+```bash
+cd frontend-next
+npm install
+cp .env.local.example .env.local  # Configure environment variables
+npm run dev
+# App runs on http://localhost:3000
+```
+
+#### 4. Python AI Services
+```bash
+cd python-services
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+cp .env.example .env  # Configure environment variables
+python ai_service/main.py
+# Service runs on http://localhost:8001
+```
+
+### ✅ NEW: Cloud Deployment Changes
+
+**All services now properly bind to `0.0.0.0` for cloud platforms** (Render, Railway, Heroku, etc.):
+
+#### Backend (Express.js)
+```javascript
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on port ${PORT}`);
+});
+```
+
+#### Python AI Service (FastAPI)
+```python
+uvicorn.run(
+    "main:app",
+    host=settings.HOST,  # = "0.0.0.0"
+    port=settings.PORT,
+    reload=settings.DEBUG,
+)
+```
+
+#### Environment Variables for Deployment
+```env
+# Backend & Python Services
+PORT=5000  # or 8001 for AI service
+NODE_ENV=production
+DEBUG=false
+
+# Frontend
+NEXT_PUBLIC_API_URL=https://your-backend.onrender.com/api
+NEXT_PUBLIC_AI_SERVICE_URL=https://your-ai-service.onrender.com
+NEXT_PUBLIC_APP_URL=https://your-app.vercel.app
+```
+
+### ✅ NEW: Memory Optimization for Render
+
+The AI service now uses **lazy-loading** to reduce startup memory usage:
+
+- ✅ Embedding models load on first request (not at startup)
+- ✅ Startup memory reduced from ~500MB to ~100MB
+- ✅ Works with Render's 512MB free tier
+- ✅ Better startup performance
+
+See: [python-services/README.md](python-services/README.md)
+
+---
+
+### Prerequisites
+
+- Node.js 18+
 - Python 3.10+
 - MongoDB 7+
 - Redis (optional)

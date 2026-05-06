@@ -142,12 +142,147 @@ backend/
    ```
 
 3. **Configure environment variables**
+
+   The backend uses a **centralized configuration file** at `src/config/env.js`.
+   
+   Create `.env` file in the backend root:
    ```bash
    cp .env.example .env
    ```
 
 4. **Update `.env` with your configuration**
+
+   All environment variables are documented in [ENV_VARIABLES.md](ENV_VARIABLES.md).
+   
+   Key variables:
    ```env
+   # Server
+   PORT=5000
+   NODE_ENV=development
+   
+   # Database
+   MONGODB_URI=mongodb://localhost:27017/mental-health-db
+   
+   # JWT
+   JWT_SECRET=your-secret-key-min-32-characters
+   JWT_EXPIRES_IN=24h
+   REFRESH_TOKEN_SECRET=your-refresh-secret
+   REFRESH_TOKEN_EXPIRES_IN=7d
+   
+   # Email
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=587
+   SMTP_USER=your-email@gmail.com
+   SMTP_PASS=your-app-password
+   
+   # CORS
+   FRONTEND_URL=http://localhost:3000
+   
+   # Services
+   AI_SERVICE_URL=http://localhost:8001
+   ANALYTICS_SERVICE_URL=http://localhost:8002
+   ```
+
+5. **Start the server**
+   ```bash
+   npm run dev          # Development (with nodemon)
+   npm start            # Production
+   ```
+
+   Server runs on: `http://localhost:5000`
+
+---
+
+## ✅ Environment Configuration System
+
+### Centralized Config File: `src/config/env.js`
+
+All environment variables are managed in a single configuration file that exports organized config objects:
+
+```javascript
+// Usage in code:
+import { SERVER_CONFIG, DATABASE_CONFIG, AUTH_CONFIG, CORS_CONFIG } from './config/env.js';
+
+const PORT = SERVER_CONFIG.PORT;  // Instead of process.env.PORT
+const JWT_SECRET = AUTH_CONFIG.JWT_SECRET;  // Instead of process.env.JWT_SECRET
+```
+
+### Available Configuration Groups
+
+| Config | Variables | Usage |
+|--------|-----------|-------|
+| **SERVER_CONFIG** | PORT, NODE_ENV, IS_PRODUCTION | `server.js`, `app.js` |
+| **DATABASE_CONFIG** | MONGODB_URI | `config/database.js` |
+| **AUTH_CONFIG** | JWT_SECRET, JWT_EXPIRES_IN, REFRESH_TOKEN_SECRET | `utils/tokenGenerator.js` |
+| **SECURITY_CONFIG** | ENCRYPTION_KEY, HMAC_SECRET, USER_TOKEN_SECRET | `utils/encryption.js` |
+| **EMAIL_CONFIG** | SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS | `services/emailService.js` |
+| **CLOUDINARY_CONFIG** | CLOUD_NAME, API_KEY, API_SECRET | `config/cloudinary.js` |
+| **RATE_LIMIT_CONFIG** | WINDOW_MS, MAX_REQUESTS | `middleware/rateLimitMiddleware.js` |
+| **CORS_CONFIG** | FRONTEND_URL, ALLOWED_ORIGINS, getOriginsList() | `app.js` |
+| **SERVICES_CONFIG** | AI_SERVICE_URL, ANALYTICS_SERVICE_URL, REDIS_URL | `controllers/adminController.js` |
+| **LOGGING_CONFIG** | LOG_LEVEL, IS_DEVELOPMENT | `utils/logger.js` |
+
+### Benefits
+
+✅ **Single Source of Truth** - All config in one file  
+✅ **Type-Safe** - No magic strings  
+✅ **Organized** - Grouped by feature  
+✅ **Defaults** - Sensible fallbacks for all values  
+✅ **Easy Deployment** - Change environment variables without touching code  
+
+See [ENV_VARIABLES.md](ENV_VARIABLES.md) for complete documentation.
+
+---
+
+## Cloud Deployment
+
+### Port Binding for Render/Railway/Heroku
+
+The backend properly binds to `0.0.0.0` for cloud platforms:
+
+```javascript
+// server.js
+const server = app.listen(PORT, '0.0.0.0', () => {
+  logger.info(`Server running on port ${PORT}`);
+});
+```
+
+### Environment Variables for Production
+
+Set these on your deployment platform (Render, Railway, Heroku, etc.):
+
+```env
+PORT=5000
+NODE_ENV=production
+MONGODB_URI=mongodb+srv://user:password@cluster.mongodb.net/mental-health-db
+
+# JWT (change from defaults!)
+JWT_SECRET=your-production-secret
+JWT_EXPIRES_IN=24h
+REFRESH_TOKEN_SECRET=your-production-refresh-secret
+REFRESH_TOKEN_EXPIRES_IN=7d
+
+# Email
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-password
+
+# Cloudinary
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-api-key
+CLOUDINARY_API_SECRET=your-api-secret
+
+# Frontend CORS
+FRONTEND_URL=https://your-app.vercel.app
+ALLOWED_ORIGINS=https://your-app.vercel.app,https://admin.your-domain.com
+
+# Services
+AI_SERVICE_URL=https://your-ai-service.onrender.com
+ANALYTICS_SERVICE_URL=https://your-analytics.onrender.com
+```
+
+---
    # Server
    PORT=5000
    NODE_ENV=development

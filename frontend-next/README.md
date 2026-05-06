@@ -246,7 +246,7 @@ frontend/
 
 1. **Clone the repository**
    ```bash
-   cd frontend
+   cd frontend-next
    ```
 
 2. **Install dependencies**
@@ -255,28 +255,126 @@ frontend/
    ```
 
 3. **Configure environment variables**
+
+   The frontend uses a **centralized configuration file** at `src/lib/config/env.ts`.
    
    Create `.env.local` file:
-   ```env
-   NEXT_PUBLIC_API_URL=http://localhost:5000/api
-   NEXT_PUBLIC_SOCKET_URL=http://localhost:5000
-   NEXT_PUBLIC_APP_NAME=Mental Health
+   ```bash
+   cp .env.local.example .env.local
    ```
 
-4. **Start development server**
+4. **Update `.env.local` with your configuration**
+
+   All environment variables are documented in [ENV_VARIABLES.md](ENV_VARIABLES.md).
+   
+   Key variables (all must be prefixed with `NEXT_PUBLIC_` to be accessible in browser):
+   ```env
+   # API Configuration
+   NEXT_PUBLIC_API_URL=http://localhost:5000/api
+   NEXT_PUBLIC_AI_SERVICE_URL=http://localhost:8001
+   
+   # App Configuration
+   NEXT_PUBLIC_APP_NAME=Mental Health Support
+   NEXT_PUBLIC_APP_URL=http://localhost:3000
+   
+   # Feature Flags
+   NEXT_PUBLIC_ENABLE_CHAT=true
+   NEXT_PUBLIC_ENABLE_BOOKING=true
+   NEXT_PUBLIC_ENABLE_COMMUNITY=true
+   
+   # Analytics (optional)
+   NEXT_PUBLIC_GA_ID=
+   ```
+
+5. **Start development server**
    ```bash
    npm run dev
    ```
 
-5. **Open browser**
+6. **Open browser**
    Navigate to `http://localhost:3000`
+
+---
+
+## ✅ Environment Configuration System
+
+### Centralized Config File: `src/lib/config/env.ts`
+
+All environment variables are managed in a single configuration file that exports type-safe configuration objects:
+
+```typescript
+// Usage in code:
+import { API_CONFIG, APP_CONFIG, FEATURES } from '@/lib/config/env';
+
+const apiUrl = API_CONFIG.API_URL;  // Automatically gets from .env.local
+const appName = APP_CONFIG.NAME;
+const chatEnabled = FEATURES.ENABLE_CHAT;
+```
+
+### Available Configuration
+
+| Config | Variables | Usage |
+|--------|-----------|-------|
+| **API_CONFIG** | API_URL, AI_SERVICE_URL, TIMEOUT | `lib/api/axios.ts` |
+| **APP_CONFIG** | NAME, URL, TITLE, DESCRIPTION | `app/layout.tsx`, metadata |
+| **FEATURES** | ENABLE_CHAT, ENABLE_BOOKING, ENABLE_COMMUNITY | Feature gates |
+| **ANALYTICS_CONFIG** | GA_ID | Google Analytics |
+| **DEBUG** | NODE_ENV check | Development mode flag |
+
+### Benefits
+
+✅ **Type-Safe** - TypeScript ensures config is used correctly  
+✅ **Browser-Safe** - NEXT_PUBLIC_* variables securely exposed  
+✅ **Single Source** - All config in one file  
+✅ **Easy Switching** - Change API URLs by environment variable  
+✅ **Next.js Optimized** - Properly handles NEXT_PUBLIC_ prefix  
+
+See [ENV_VARIABLES.md](ENV_VARIABLES.md) for complete documentation.
+
+---
 
 ## Building for Production
 
 ```bash
+# Build the application
 npm run build
+
+# Start production server
 npm start
 ```
+
+---
+
+## Deployment to Vercel
+
+### Environment Variables on Vercel
+
+1. Go to **Settings** → **Environment Variables**
+2. Add the following variables:
+
+```env
+NEXT_PUBLIC_API_URL=https://your-backend.onrender.com/api
+NEXT_PUBLIC_AI_SERVICE_URL=https://your-ai-service.onrender.com
+NEXT_PUBLIC_APP_URL=https://your-app.vercel.app
+NEXT_PUBLIC_APP_NAME=Mental Health Support
+NEXT_PUBLIC_ENABLE_CHAT=true
+NEXT_PUBLIC_ENABLE_BOOKING=true
+NEXT_PUBLIC_ENABLE_COMMUNITY=true
+```
+
+3. Redeploy the project
+
+### Build Command
+```bash
+npm run build
+```
+
+### Start Command
+```bash
+npm start
+```
+
+---
 
 ## Routing Structure
 
