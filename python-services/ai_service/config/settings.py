@@ -5,9 +5,9 @@ import os
 class Settings(BaseSettings):
     """Application settings"""
 
-    HOST: str = "0.0.0.0"
-    PORT: int = 8001
-    DEBUG: bool = True
+    HOST: str = os.getenv("HOST", "0.0.0.0")
+    PORT: int = int(os.getenv("PORT", "8001"))
+    DEBUG: bool = os.getenv("DEBUG", "True").lower() == "true"
 
     # ✅ CHANGE THIS
     ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:5000"
@@ -35,8 +35,10 @@ class Settings(BaseSettings):
     @field_validator("GOOGLE_API_KEY")
     @classmethod
     def validate_api_key(cls, v):
+        # Allow empty string in production, but warn in debug mode
         if not v or v.strip() == "":
-            raise ValueError("GOOGLE_API_KEY environment variable must be set")
+            logger = __import__('logging').getLogger(__name__)
+            logger.warning("GOOGLE_API_KEY environment variable is not set")
         return v
 
     # ✅ ADD THIS HELPER

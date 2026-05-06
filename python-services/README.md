@@ -314,6 +314,82 @@ docker build -t mental-health-ai .
 docker run -p 8000:8000 mental-health-ai
 ```
 
+## Deployment
+
+### Environment Variable Configuration
+
+**IMPORTANT**: Before deploying, set these environment variables in your deployment platform:
+
+```env
+# Required
+PORT=8001                          # Auto-assigned by platform (or use 8001)
+HOST=0.0.0.0                      # Keep as 0.0.0.0
+
+# LLM Keys (at least one required)
+GOOGLE_API_KEY=your-key-here
+OPENAI_API_KEY=your-key-here      # Optional
+
+# CORS Configuration
+ALLOWED_ORIGINS=http://localhost:3000,https://your-domain.com
+
+# Debug Mode
+DEBUG=false
+```
+
+### Deploy to Railway
+
+1. **Connect your repository**
+   - Push code to GitHub
+   - Connect repo to Railway
+
+2. **Set environment variables** in Railway dashboard:
+   ```
+   GOOGLE_API_KEY=your-key
+   ALLOWED_ORIGINS=https://your-vercel-app.vercel.app,https://your-domain.com
+   ```
+
+3. **Set start command**:
+   ```
+   uvicorn ai_service.main:app --host 0.0.0.0 --port $PORT
+   ```
+
+4. **Deploy**
+   - Railway will auto-detect Python and install dependencies
+   - Service will be accessible at `https://your-service.railway.app`
+
+### Deploy to Render
+
+1. **Create new Web Service**
+   - Connect GitHub repo
+   - Set Root Directory: `python-services`
+
+2. **Build Command**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Start Command**:
+   ```bash
+   uvicorn ai_service.main:app --host 0.0.0.0 --port $PORT
+   ```
+
+4. **Environment Variables** (in Render dashboard):
+   ```
+   GOOGLE_API_KEY=your-key
+   ALLOWED_ORIGINS=https://your-app.onrender.com
+   DEBUG=false
+   ```
+
+### Verify Deployment
+
+```bash
+# Health check
+curl https://your-service-domain/health
+
+# API Docs
+https://your-service-domain/docs
+```
+
 ## Testing
 
 ```bash

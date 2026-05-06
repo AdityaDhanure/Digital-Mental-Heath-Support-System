@@ -78,6 +78,9 @@ async def shutdown_event():
 
 # Run the application
 if __name__ == "__main__":
+    logger.info(f"🚀 Starting server on {settings.HOST}:{settings.PORT}")
+    logger.info(f"📚 API Docs: http://{settings.HOST}:{settings.PORT}/docs")
+    
     uvicorn.run(
         "main:app",
         host=settings.HOST,
