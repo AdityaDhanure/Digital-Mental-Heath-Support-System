@@ -14,12 +14,19 @@ class EmbeddingService:
     
     def __init__(self):
         self.model_name = settings.EMBEDDING_MODEL
-        self.model = SentenceTransformer(self.model_name)
-        logger.info(f"Loaded embedding model: {self.model_name}")
+        self.model = None  # Lazy load on first use
+        logger.info(f"EmbeddingService initialized (model will load on first use)")
+    
+    def _ensure_model_loaded(self):
+        """Load model on first use (lazy loading)"""
+        if self.model is None:
+            self.model = SentenceTransformer(self.model_name)
+            logger.info(f"Loaded embedding model: {self.model_name}")
 
 # 1. ==================================================================================================== #
     async def generate_embedding(self, text: str) -> List[float]:
         """Generate normalized embedding for a single text"""
+        self._ensure_model_loaded()
         if not self.model:
             raise RuntimeError("Embedding model not initialized")
 
@@ -42,6 +49,7 @@ class EmbeddingService:
 # 2.  ==================================================================================================== #
     async def generate_embeddings_batch(self, texts: List[str]) -> List[List[float]]:
         """Generate normalized embeddings for multiple texts"""
+        self._ensure_model_loaded()
         if not self.model:
             raise RuntimeError("Embedding model not initialized")
 

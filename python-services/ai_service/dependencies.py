@@ -56,16 +56,15 @@ def get_embedding_service() -> EmbeddingService:
 # ================================================================= #
 # (main.py)
 async def initialize_services():
-    """Initialize all services on startup"""
-    rag_service = get_rag_service()
-    safety_service = get_safety_service()
-    
-    await rag_service.initialize()
-    await safety_service.load_models()
+    """Initialize services on first request (lazy loading)"""
+    # Services will be initialized on-demand when first accessed
+    # This prevents memory overload at startup
+    pass
 
 
 async def cleanup_services():
     """Cleanup all services on shutdown"""
-    rag_service = get_rag_service()
-    await rag_service.close()
+    global _rag_service
+    if _rag_service is not None:
+        await _rag_service.close()
 # ================================================================= #
