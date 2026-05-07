@@ -19,13 +19,13 @@ export const API_CONFIG = {
 // App Configuration
 export const APP_CONFIG = {
   // App name
-  NAME: process.env.NEXT_PUBLIC_APP_NAME || 'Mental Health Support',
+  NAME: process.env.NEXT_PUBLIC_APP_NAME || 'MindSage AI',
   
   // App URL (for redirects, etc.)
   URL: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
   
   // App title (for metadata)
-  TITLE: 'Mental Health Support System',
+  TITLE: 'MindSage AI - Smart Psychological Support System for Students',
   
   // App description (for metadata)
   DESCRIPTION: 'A comprehensive digital mental health platform for students',

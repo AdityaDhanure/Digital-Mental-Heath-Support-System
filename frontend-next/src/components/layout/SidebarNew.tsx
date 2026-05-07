@@ -138,7 +138,7 @@ export default function Sidebar() {
               <HeartIconSolid className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 className="font-bold text-gray-900">MindCare</h1>
+              <h1 className="font-bold text-gray-900">MindSage AI</h1>
               <p className="text-xs text-gray-500">{getPortalName()}</p>
             </div>
           </Link>

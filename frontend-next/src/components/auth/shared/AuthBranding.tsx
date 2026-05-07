@@ -37,7 +37,7 @@ export default function AuthBranding() {
         <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
           <HeartIcon className="h-7 w-7" />
         </div>
-        <span className="text-2xl font-bold">MindCare</span>
+        <span className="text-2xl font-bold">MindSage AI</span>
       </Link>
 
       <motion.div
@@ -77,7 +77,7 @@ export default function AuthBranding() {
       </motion.div>
 
       <div className="relative z-10 flex items-center justify-between text-sm text-white/70">
-        <p>© 2025 MindCare. All rights reserved.</p>
+        <p>© 2025 MindSage AI. All rights reserved.</p>
         <div className="flex items-center gap-1">
           <ShieldCheckIcon className="h-4 w-4" />
           <span>SSL Secured</span>

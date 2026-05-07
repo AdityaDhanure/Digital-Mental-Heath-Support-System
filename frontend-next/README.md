@@ -274,7 +274,7 @@ frontend/
    NEXT_PUBLIC_AI_SERVICE_URL=http://localhost:8001
    
    # App Configuration
-   NEXT_PUBLIC_APP_NAME=Mental Health Support
+   NEXT_PUBLIC_APP_NAME=MindSage AI
    NEXT_PUBLIC_APP_URL=http://localhost:3000
    
    # Feature Flags
@@ -356,7 +356,7 @@ npm start
 NEXT_PUBLIC_API_URL=https://your-backend.onrender.com/api
 NEXT_PUBLIC_AI_SERVICE_URL=https://your-ai-service.onrender.com
 NEXT_PUBLIC_APP_URL=https://your-app.vercel.app
-NEXT_PUBLIC_APP_NAME=Mental Health Support
+NEXT_PUBLIC_APP_NAME=MindSage AI
 NEXT_PUBLIC_ENABLE_CHAT=true
 NEXT_PUBLIC_ENABLE_BOOKING=true
 NEXT_PUBLIC_ENABLE_COMMUNITY=true

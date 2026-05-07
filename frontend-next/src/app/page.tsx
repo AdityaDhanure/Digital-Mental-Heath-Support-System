@@ -35,7 +35,7 @@ export default function Home() {
                 <HeartSolidIcon className="h-6 w-6 text-white" />
               </div>
               <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                MindCare
+                MindSage AI
               </span>
             </Link>
             <div className="flex items-center gap-4">
@@ -129,7 +129,7 @@ export default function Home() {
                       💜
                     </div>
                     <div>
-                      <h3 className="font-bold text-gray-900">MindCare Support</h3>
+                      <h3 className="font-bold text-gray-900">MindSage AI Support</h3>
                       <p className="text-sm text-gray-500">Always here for you</p>
                     </div>
                   </div>
@@ -371,7 +371,7 @@ export default function Home() {
                 <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
                   <HeartSolidIcon className="h-6 w-6 text-white" />
                 </div>
-                <span className="text-xl font-bold">MindCare</span>
+                <span className="text-xl font-bold">MindSage AI</span>
               </div>
               <p className="text-gray-400 max-w-md mb-6">
                 A safe, confidential platform for students to access mental health support, connect with counselors, and find resources for their wellness journey.
@@ -401,7 +401,7 @@ export default function Home() {
             </div>
           </div>
           <div className="pt-8 border-t border-gray-800 text-center text-gray-400">
-            <p>© 2025 MindCare. All rights reserved. Made with 💜 for students</p>
+            <p>© 2025 MindSage AI. All rights reserved. Made with 💜 for students</p>
           </div>
         </div>
       </footer>
@@ -477,7 +477,7 @@ const testimonials = [
   {
     name: 'Priya Sharma',
     role: 'Engineering Student',
-    text: 'MindCare helped me deal with exam anxiety. The AI assistant is incredibly supportive, and booking sessions with counselors is so easy!'
+    text: 'MindSage AI helped me deal with exam anxiety. The AI assistant is incredibly supportive, and booking sessions with counselors is so easy!'
   },
   {
     name: 'Rahul Verma',
