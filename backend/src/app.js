@@ -32,17 +32,27 @@ const allowedOrigins = CORS_CONFIG.getOriginsList();
 
 const corsOptions = {
   origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or Postman)
+    // Allow requests with no origin (mobile apps, Postman, server-to-server)
     if (!origin) return callback(null, true);
-    
-    // Check if origin is allowed
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      // Log rejected origin
-      logger.warn(`CORS blocked request from origin: ${origin}`);
-      callback(new Error(`CORS policy: origin ${origin} not allowed`), false);
+
+    // Allow any vercel.app subdomain (preview & production deployments)
+    if (origin.match(/^https:\/\/.*\.vercel\.app$/)) {
+      return callback(null, true);
     }
+
+    // Allow any netlify.app subdomain
+    if (origin.match(/^https:\/\/.*\.netlify\.app$/)) {
+      return callback(null, true);
+    }
+
+    // Check explicit allowed list (from env vars + localhost)
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    // Block everything else
+    logger.warn(`CORS blocked request from origin: ${origin}`);
+    callback(null, false);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
