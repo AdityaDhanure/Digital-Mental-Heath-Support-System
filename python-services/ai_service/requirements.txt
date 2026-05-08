@@ -1,36 +1,29 @@
-# python-services/requirements.txt
+# AI Service requirements — only direct dependencies actually imported in the codebase
+# Removed: langchain, langchain_community, openai, google-generativeai,
+#           tiktoken, nltk, httpx, aiofiles, python-json-logger
 
-# FastAPI Framework
-fastapi
-uvicorn[standard]
-pydantic
-pydantic-settings
+# ── Web framework ─────────────────────────────────────────────────────────────
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
 
-# LangChain & LLM
-langchain
-langchain-core
-langchain_google_genai
-langchain_community
-openai
-google-generativeai
-tiktoken
+# ── Data validation ───────────────────────────────────────────────────────────
+pydantic==2.10.3
+pydantic-settings==2.7.0
 
-# Vector Store & Embeddings
-faiss-cpu
-sentence-transformers
+# ── LangChain (only the two packages actually imported) ───────────────────────
+langchain-core==0.3.28
+langchain-google-genai==2.0.9
 
-# NLP & ML Models
-transformers
-torch
-numpy
+# ── Vector store & embeddings ─────────────────────────────────────────────────
+faiss-cpu==1.9.0.post1
+sentence-transformers==3.3.1
 
-# Sentiment & Safety
-nltk
+# ── NLP / ML (safety_service.py uses transformers.pipeline) ──────────────────
+transformers==4.47.1
+torch==2.5.1
 
-# Utilities
-python-dotenv
-httpx
-aiofiles
+# ── Numerical ─────────────────────────────────────────────────────────────────
+numpy==1.26.4
 
-# Monitoring & Logging
-python-json-logger
+# ── Config ────────────────────────────────────────────────────────────────────
+python-dotenv==1.0.1
