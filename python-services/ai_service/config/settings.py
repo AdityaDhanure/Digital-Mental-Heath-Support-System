@@ -5,9 +5,10 @@ import os
 class Settings(BaseSettings):
     """Application settings"""
 
-    HOST: str = os.getenv("HOST", "0.0.0.0")
-    PORT: int = int(os.getenv("PORT", "8001"))
-    DEBUG: bool = os.getenv("DEBUG", "False").lower() == "true"
+    HOST: str = "0.0.0.0"
+    # Render injects $PORT — read it directly so the default is always correct
+    PORT: int = int(os.environ.get("PORT", "8001"))
+    DEBUG: bool = os.environ.get("DEBUG", "False").lower() == "true"
 
     # CORS - Read from .env file
     ALLOWED_ORIGINS: str = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5000")
