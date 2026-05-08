@@ -140,6 +140,15 @@ NEXT_PUBLIC_ENABLE_COMMUNITY=true
 
 ## Deployment on Vercel
 
+This repository is a monorepo. The deployed Next.js app is inside `frontend-next/`.
+
+Before setting variables, verify the Vercel project is configured in one of these ways:
+
+- **Recommended:** Project Settings → General → Root Directory = `frontend-next`
+- **Alternative:** keep the repository root and use the root `vercel.json`, which points Vercel to `frontend-next/package.json`
+
+A Vercel-generated `403 Forbidden` page on the deployment URL usually means Vercel is serving the wrong project root or Deployment Protection / Vercel Authentication is enabled. Backend CORS issues appear later as failed API calls in the browser network panel.
+
 ### Step 1: Set Environment Variables
 
 1. Go to **Vercel Dashboard** → Your Project
@@ -188,7 +197,8 @@ NEXT_PUBLIC_API_URL=https://different-api.com npm run dev
 | Issue | Solution |
 |-------|----------|
 | "Failed to fetch from API" | Check `NEXT_PUBLIC_API_URL` is correct and backend is running |
-| 403 Forbidden error | Check backend CORS allows your frontend domain |
+| Vercel `403 Forbidden` page | Check the Vercel Root Directory points to `frontend-next`, or use the root `vercel.json`; also disable Deployment Protection for public access |
+| API request blocked by CORS | Add the Vercel domain to backend `FRONTEND_URL` / `ALLOWED_ORIGINS` |
 | Environment variables not updating | Clear `.next` build cache: `rm -rf .next` |
 | Variables undefined in browser | Make sure to use `NEXT_PUBLIC_` prefix |
 

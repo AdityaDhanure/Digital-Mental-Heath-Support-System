@@ -1,13 +1,7 @@
-// ============================================
-// SOLUTION 7: Update next.config.js
-// FILE: next.config.js (UPDATED)
-// ============================================
-/** @type {import('next').NextConfig} */
-import path from 'path';
+import type { NextConfig } from 'next';
 
-const nextConfig = {
+const nextConfig: NextConfig = {
   reactStrictMode: true,
-
   images: {
     remotePatterns: [
       {
@@ -16,11 +10,6 @@ const nextConfig = {
       },
     ],
   },
-
-  // Fix monorepo/workspace warning
-  turbopack: {
-    root: path.join(__dirname),
-  },
 };
 
-module.exports = nextConfig;
+export default nextConfig;

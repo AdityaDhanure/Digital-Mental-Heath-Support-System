@@ -1,20 +1,8 @@
-// ============================================
-// SOLUTION 5: Fix Root Layout
-// FILE: src/app/layout.tsx (UPDATED)
-// ============================================
 import type { Metadata } from 'next';
-import { Inter, Poppins } from 'next/font/google';
 import './globals.css';
 import { Toaster } from 'react-hot-toast';
 import { Suspense } from 'react';
 import { APP_CONFIG } from '@/lib/config/env';
-
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
-const poppins = Poppins({
-  weight: ['400', '600', '700'],
-  subsets: ['latin'],
-  variable: '--font-poppins',
-});
 
 export const metadata: Metadata = {
   title: APP_CONFIG.TITLE,
@@ -28,7 +16,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} ${poppins.variable} font-sans`} suppressHydrationWarning>
+      <body className="font-sans" suppressHydrationWarning>
         <Suspense fallback={<LoadingFallback />}>
           {children}
         </Suspense>

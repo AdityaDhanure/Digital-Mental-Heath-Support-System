@@ -354,6 +354,14 @@ npm start
 
 ## Deployment to Vercel
 
+This project is a monorepo and the Next.js app lives in `frontend-next/`.
+Use one of these Vercel setups:
+
+- Recommended: set **Project Settings** -> **General** -> **Root Directory** to `frontend-next`.
+- Alternative: keep the project root as the Vercel root and use the root `vercel.json`, which routes builds to `frontend-next/package.json`.
+
+If Vercel shows its own `403 Forbidden` page immediately after a "Ready" deployment, first check that Vercel is building the `frontend-next` app and that **Deployment Protection / Vercel Authentication** is disabled for public access. Backend CORS only affects API requests after the frontend loads.
+
 ### Environment Variables on Vercel
 
 1. Go to **Settings** → **Environment Variables**
@@ -369,7 +377,14 @@ NEXT_PUBLIC_ENABLE_BOOKING=true
 NEXT_PUBLIC_ENABLE_COMMUNITY=true
 ```
 
-3. Redeploy the project
+3. Redeploy the project.
+
+Also allow the Vercel domains in the backend environment:
+
+```env
+FRONTEND_URL=https://your-app.vercel.app
+ALLOWED_ORIGINS=https://your-app.vercel.app,https://your-preview-domain.vercel.app
+```
 
 ### Build Command
 ```bash

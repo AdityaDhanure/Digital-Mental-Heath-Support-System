@@ -865,6 +865,8 @@ NEXT_PUBLIC_AI_SERVICE_URL=https://your-ai-service.onrender.com
 NEXT_PUBLIC_APP_URL=https://your-app.vercel.app
 ```
 
+For Vercel, the Next.js app lives in `frontend-next/`. Set the Vercel **Root Directory** to `frontend-next` or keep the repository root and use the root `vercel.json` included in this repo. If Vercel shows a platform `403 Forbidden` page before the app loads, check the root directory/build target and Deployment Protection settings first; backend CORS only affects API calls after the frontend is served.
+
 ### ✅ NEW: Memory Optimization for Render
 
 The AI service now uses **lazy-loading** to reduce startup memory usage:
