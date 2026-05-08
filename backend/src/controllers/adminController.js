@@ -5,6 +5,8 @@ import Chat from '../models/Chat.js';
 import Booking from '../models/Booking.js';
 import Resource from '../models/Resource.js';
 import Post from '../models/Post.js';
+import Notification from '../models/Notification.js';
+import mongoose from 'mongoose';
 import { catchAsync } from '../middleware/errorMiddleware.js';
 import logger from '../utils/logger.js';
 import axios from 'axios';
@@ -111,6 +113,131 @@ export const getDashboardStats = catchAsync(async (req, res) => {
         end
       }
     }
+  });
+});
+
+export const getRecentActivity = catchAsync(async (req, res) => {
+  const limit = Math.min(parseInt(req.query.limit, 10) || 12, 30);
+
+  const [
+    users,
+    bookings,
+    resources,
+    posts,
+    chats,
+    notifications
+  ] = await Promise.all([
+    User.find({ isActive: true })
+      .select('name role createdAt')
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean(),
+
+    Booking.find({})
+      .select('student counselor status urgencyLevel concernCategory createdAt')
+      .populate('student', 'name')
+      .populate('counselor', 'name')
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean(),
+
+    Resource.find({ isArchived: false })
+      .select('title type category isPublished uploadedBy createdAt')
+      .populate('uploadedBy', 'name')
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean(),
+
+    Post.find({})
+      .select('title category status moderation.flagged moderation.removed author createdAt')
+      .populate('author', 'name')
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean(),
+
+    Chat.find({
+      'safetyCheck.riskLevel': { $in: ['medium', 'high', 'critical'] }
+    })
+      .select('title safetyCheck.riskLevel safetyCheck.flaggedForReview createdAt')
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean(),
+
+    Notification.find({})
+      .select('title message type priority read createdAt')
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean()
+  ]);
+
+  const activities = [
+    ...users.map((user) => ({
+      id: `user-${user._id}`,
+      type: 'user_created',
+      label: 'User joined',
+      details: `${user.name || 'A user'} joined as ${user.role}`,
+      priority: 'low',
+      createdAt: user.createdAt,
+      href: '/admin/users'
+    })),
+
+    ...bookings.map((booking) => ({
+      id: `booking-${booking._id}`,
+      type: 'booking_created',
+      label: 'Booking created',
+      details: `${booking.student?.name || 'A student'} booked ${booking.concernCategory || 'support'} with ${booking.counselor?.name || 'a counselor'} (${booking.status})`,
+      priority: booking.urgencyLevel === 'urgent' || booking.urgencyLevel === 'high' ? 'high' : 'medium',
+      createdAt: booking.createdAt,
+      href: '/admin/analytics'
+    })),
+
+    ...resources.map((resource) => ({
+      id: `resource-${resource._id}`,
+      type: 'resource_created',
+      label: 'Resource added',
+      details: `${resource.title} was added${resource.uploadedBy?.name ? ` by ${resource.uploadedBy.name}` : ''} (${resource.isPublished ? 'published' : 'draft'})`,
+      priority: 'low',
+      createdAt: resource.createdAt,
+      href: '/admin/resources'
+    })),
+
+    ...posts.map((post) => ({
+      id: `post-${post._id}`,
+      type: post.moderation?.flagged || post.moderation?.removed ? 'post_flagged' : 'post_created',
+      label: post.moderation?.flagged || post.moderation?.removed ? 'Post needs review' : 'Community post',
+      details: `${post.title} in ${post.category}${post.author?.name ? ` by ${post.author.name}` : ''}`,
+      priority: post.moderation?.flagged || post.moderation?.removed ? 'high' : 'medium',
+      createdAt: post.createdAt,
+      href: '/admin/community'
+    })),
+
+    ...chats.map((chat) => ({
+      id: `chat-${chat._id}`,
+      type: 'chat_risk',
+      label: 'Chat safety signal',
+      details: `${chat.title || 'A chat session'} was classified as ${chat.safetyCheck?.riskLevel || 'medium'} risk`,
+      priority: chat.safetyCheck?.riskLevel === 'critical' || chat.safetyCheck?.riskLevel === 'high' ? 'urgent' : 'high',
+      createdAt: chat.createdAt,
+      href: '/admin/analytics'
+    })),
+
+    ...notifications.map((notification) => ({
+      id: `notification-${notification._id}`,
+      type: notification.type,
+      label: notification.title,
+      details: notification.message,
+      priority: notification.priority,
+      createdAt: notification.createdAt,
+      href: '/admin/notifications'
+    }))
+  ]
+    .filter((activity) => activity.createdAt)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .slice(0, limit);
+
+  res.status(200).json({
+    status: 'success',
+    data: { activities }
   });
 });
 
@@ -427,8 +554,10 @@ export const getCommunityAnalytics = catchAsync(async (req, res) => {
 export const getSystemHealth = catchAsync(async (req, res) => {
   // Database connection status
   const dbStatus = {
-    connected: require('mongoose').connection.readyState === 1,
-    collections: await require('mongoose').connection.db.listCollections().toArray()
+    connected: mongoose.connection.readyState === 1,
+    collections: mongoose.connection.readyState === 1
+      ? await mongoose.connection.db.listCollections().toArray()
+      : []
   };
   
   // Check Python AI service
@@ -718,7 +847,9 @@ export const generateAnalyticsReport = catchAsync(async (req, res) => {
   const { reportType, startDate, endDate, format } = req.body;
   
   try {
-    const period = 30;
+    const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const end = endDate ? new Date(endDate) : new Date();
+    const period = Math.max(1, Math.ceil((end - start) / (24 * 60 * 60 * 1000)));
     const reportContent = await import('../utils/reportGenerator.js').then(m => 
       m.generateAnalyticsReport(reportType, startDate, endDate, period)
     );

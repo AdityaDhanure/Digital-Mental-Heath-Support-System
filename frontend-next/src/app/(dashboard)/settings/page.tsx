@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Card } from '@/components/common/Card';
-import { Button } from '@/components/common/Button';
 import { useAuth } from '@/lib/hooks/useAuth';
+import { usePersistentState } from '@/lib/hooks/usePersistentState';
 import { Loading } from '@/components/common/Loading';
 import AvailabilitySettings from '@/components/settings/AvailabilitySettings';
 import { ProfileSettings } from '@/components/settings/shared';
@@ -27,20 +27,9 @@ import {
 
 export default function SettingsPage() {
   const { user, refreshUser, isLoading } = useAuth(true);
-  const [activeTab, setActiveTab] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return sessionStorage.getItem('settingsActiveTab') || 'profile';
-    }
-    return 'profile';
-  });
+  const [activeTab, setActiveTab] = usePersistentState('mindsage:settings:tab', 'profile');
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('settingsActiveTab', activeTab);
-    }
-  }, [activeTab]);
-
-  const tabs = [
+  const tabs = useMemo(() => [
     { id: 'profile', label: 'Profile', icon: UserIcon },
     ...(user?.role === 'counselor' ? [{ id: 'availability', label: 'Availability', icon: CalendarIcon }] : []),
     { id: 'account', label: 'Account Details', icon: AcademicCapIcon },
@@ -48,7 +37,13 @@ export default function SettingsPage() {
     { id: 'notifications', label: 'Notifications', icon: BellIcon },
     { id: 'privacy', label: 'Privacy', icon: EyeIcon },
     { id: 'preferences', label: 'Preferences', icon: LanguageIcon },
-  ];
+  ], [user?.role]);
+
+  useEffect(() => {
+    if (!tabs.some((tab) => tab.id === activeTab)) {
+      setActiveTab('profile');
+    }
+  }, [activeTab, setActiveTab, tabs]);
 
   if (isLoading) {
     return <Loading />;

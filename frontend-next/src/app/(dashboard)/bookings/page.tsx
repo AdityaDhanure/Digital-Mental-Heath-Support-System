@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useAuthStore } from '@/store/authStore';
+import { usePersistentState } from '@/lib/hooks/usePersistentState';
 import { bookingAPI } from '@/lib/api/booking';
 import { CalendarIcon, UserGroupIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
@@ -26,8 +27,8 @@ export default function BookingsPage() {
   const [counselors, setCounselors] = useState<any[]>([]);
   const [bookings, setBookings] = useState<any[]>([]);
   const [filteredBookings, setFilteredBookings] = useState<any[]>([]);
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [activeTab, setActiveTab] = useState<'counselors' | 'bookings'>('counselors');
+  const [statusFilter, setStatusFilter] = usePersistentState('mindsage:bookings:status', 'all');
+  const [activeTab, setActiveTab] = usePersistentState<'counselors' | 'bookings'>('mindsage:bookings:tab', 'counselors');
   const [isLoading, setIsLoading] = useState(true);
 
   // Modal states

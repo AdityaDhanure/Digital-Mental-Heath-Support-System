@@ -49,6 +49,12 @@ A comprehensive Express.js backend for a Digital Mental Health and Psychological
   - Analytics and reporting
   - Content moderation
 
+- **Data Caching**
+  - Redis-backed response caching for safe GET endpoints
+  - In-memory fallback when Redis is not configured or unavailable
+  - Cache invalidation on write routes such as create/update/delete/moderation/status changes
+  - `X-Data-Cache: HIT|MISS` response header for quick debugging
+
 ## Tech Stack
 
 - **Runtime**: Node.js 18+
@@ -59,7 +65,7 @@ A comprehensive Express.js backend for a Digital Mental Health and Psychological
 - **Validation**: Express Validator
 - **Email**: Nodemailer
 - **File Storage**: Cloudinary
-- **Caching**: Redis
+- **Caching**: Redis-backed GET response cache with memory fallback
 - **Logging**: Winston
 - **Code Quality**: ESLint, Prettier
 
@@ -113,9 +119,10 @@ backend/
 │   │   ├── tokenGenerator.js
 │   │   ├── sanitizer.js
 │   │   ├── logger.js
+│   │   ├── cache.js
 │   │   └── reportGenerator.js
-│   ├── app.js                 # Express app configuration
-│   └── server.js              # Server entry point
+│   └── app.js                 # Express app configuration
+├── server.js                  # Server entry point
 ├── package.json
 └── .env.example
 ```
@@ -126,7 +133,7 @@ backend/
 
 - Node.js 18+
 - MongoDB
-- Redis (optional, for rate limiting)
+- Redis (optional, for data caching and distributed rate limiting)
 - Cloudinary account (for file uploads)
 
 ### Steps
@@ -178,9 +185,13 @@ backend/
    # CORS
    FRONTEND_URL=http://localhost:3000
    
-   # Services
-   AI_SERVICE_URL=http://localhost:8001
-   ANALYTICS_SERVICE_URL=http://localhost:8002
+# Services
+AI_SERVICE_URL=http://localhost:8001
+ANALYTICS_SERVICE_URL=http://localhost:8002
+
+# Redis / Caching
+REDIS_URL=redis://localhost:6379
+DATA_CACHE_TTL_SECONDS=120
    ```
 
 5. **Start the server**
@@ -219,7 +230,7 @@ const JWT_SECRET = AUTH_CONFIG.JWT_SECRET;  // Instead of process.env.JWT_SECRET
 | **CLOUDINARY_CONFIG** | CLOUD_NAME, API_KEY, API_SECRET | `config/cloudinary.js` |
 | **RATE_LIMIT_CONFIG** | WINDOW_MS, MAX_REQUESTS | `middleware/rateLimitMiddleware.js` |
 | **CORS_CONFIG** | FRONTEND_URL, ALLOWED_ORIGINS, getOriginsList() | `app.js` |
-| **SERVICES_CONFIG** | AI_SERVICE_URL, ANALYTICS_SERVICE_URL, REDIS_URL | `controllers/adminController.js` |
+| **SERVICES_CONFIG** | AI_SERVICE_URL, ANALYTICS_SERVICE_URL, REDIS_URL | `controllers/adminController.js`, `middleware/rateLimitMiddleware.js`, `utils/cache.js` |
 | **LOGGING_CONFIG** | LOG_LEVEL, IS_DEVELOPMENT | `utils/logger.js` |
 
 ### Benefits
@@ -280,39 +291,9 @@ ALLOWED_ORIGINS=https://your-app.vercel.app,https://admin.your-domain.com
 # Services
 AI_SERVICE_URL=https://your-ai-service.onrender.com
 ANALYTICS_SERVICE_URL=https://your-analytics.onrender.com
+REDIS_URL=redis://your-redis-url
+DATA_CACHE_TTL_SECONDS=120
 ```
-
----
-   # Server
-   PORT=5000
-   NODE_ENV=development
-
-   # MongoDB
-   MONGO_URI=mongodb://localhost:27017/mental-health
-
-   # JWT
-   JWT_SECRET=your-secret-key
-   JWT_EXPIRE=30d
-   JWT_COOKIE_EXPIRE=30
-
-   # Redis (optional)
-   REDIS_URL=redis://localhost:6379
-
-   # Email
-   SMTP_HOST=smtp.mailtrap.io
-   SMTP_PORT=587
-   SMTP_USER=your-user
-   SMTP_PASS=your-password
-   FROM_EMAIL=noreply@mentalhealth.com
-
-   # Cloudinary
-   CLOUDINARY_CLOUD_NAME=your-cloud-name
-   CLOUDINARY_API_KEY=your-api-key
-   CLOUDINARY_API_SECRET=your-api-secret
-
-   # Frontend URL
-   FRONTEND_URL=http://localhost:3000
-   ```
 
 5. **Start the server**
    ```bash
@@ -407,6 +388,28 @@ ANALYTICS_SERVICE_URL=https://your-analytics.onrender.com
 | GET | `/api/admin/analytics` | Get analytics |
 | GET | `/api/admin/reports` | Generate reports |
 
+## GET Response Caching
+
+The backend now uses `src/utils/cache.js` for safe GET response caching.
+
+- `REDIS_URL` enables Redis-backed caching across server instances.
+- If Redis is missing or temporarily unavailable, the app falls back to a process-local memory cache.
+- `DATA_CACHE_TTL_SECONDS` controls the default TTL; routes can override TTL per endpoint.
+- Cache keys are scoped by endpoint and current user/role so private data is not shared between users.
+- Mutating routes call `invalidateCache(...)` to clear affected namespaces.
+
+Cached route groups include:
+
+| Namespace | Examples |
+|-----------|----------|
+| `admin` | Dashboard stats, analytics, users, recent activity |
+| `resources` | Public resources, admin resources, category/featured/trending resources |
+| `community` | Posts, admin moderation lists, category/trending/my-posts |
+| `bookings` | Booking lists, booking details, student session history |
+| `availability` | Counselor availability and own availability slots |
+| `notifications` | Notification lists and unread counts |
+| `users` | Counselor lists and student detail lookups |
+
 ## User Roles
 
 ### Student
@@ -472,12 +475,13 @@ npm run format
 |----------|-------------|----------|
 | `PORT` | Server port | Yes |
 | `NODE_ENV` | Environment | Yes |
-| `MONGO_URI` | MongoDB connection string | Yes |
+| `MONGODB_URI` | MongoDB connection string | Yes |
 | `JWT_SECRET` | JWT secret key | Yes |
-| `JWT_EXPIRE` | JWT expiration | Yes |
+| `JWT_EXPIRES_IN` | JWT expiration | Yes |
 | `SMTP_*` | Email configuration | Yes |
 | `CLOUDINARY_*` | Cloudinary config | No |
-| `REDIS_URL` | Redis URL | No |
+| `REDIS_URL` | Redis URL for data caching and distributed rate limiting | No |
+| `DATA_CACHE_TTL_SECONDS` | Default TTL for cached GET responses | No |
 
 ## Dependencies
 
@@ -493,7 +497,7 @@ npm run format
 - winston - Logging
 - multer - File uploads
 - cloudinary - File storage
-- redis - Caching
+- redis - Data caching and distributed rate limiting
 
 ### Development
 - nodemon - Auto-reload
@@ -511,5 +515,5 @@ For issues and questions, please open an issue on GitHub.
 
 ## Related Projects
 
-- [Frontend](https://github.com/your-repo/frontend)
-- [Python AI Services](https://github.com/your-repo/python-services)
+- [Frontend](../frontend-next/README.md)
+- [Python AI Services](../python-services/README.md)

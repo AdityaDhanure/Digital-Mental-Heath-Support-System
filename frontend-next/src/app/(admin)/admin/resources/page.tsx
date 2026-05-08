@@ -1,8 +1,10 @@
 'use client';
+import BackButton from '@/components/common/BackButton';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { resourcesAPI } from '@/lib/api/resources';
 import Link from 'next/link';
+import { Resource } from '@/types/resource.types';
 import {
   BookOpenIcon,
   MagnifyingGlassIcon,
@@ -23,7 +25,21 @@ import {
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/store/authStore';
+import { usePersistentState } from '@/lib/hooks/usePersistentState';
 import { useRouter } from 'next/navigation';
+
+type AdminResource = Omit<Resource, 'uploadedBy'> & {
+  uploadedBy?: string | { name?: string };
+};
+
+interface ResourceListParams {
+  page: number;
+  limit: number;
+  category?: string;
+  type?: string;
+  status?: string;
+  search?: string;
+}
 
 const categories = [
   { value: 'all', label: 'All Categories' },
@@ -62,28 +78,19 @@ export default function AdminResourcesPage() {
   const router = useRouter();
   const { user, isHydrated } = useAuthStore();
   const [loading, setLoading] = useState(true);
-  const [resources, setResources] = useState<any[]>([]);
-  const [search, setSearch] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [typeFilter, setTypeFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [page, setPage] = useState(1);
+  const [resources, setResources] = useState<AdminResource[]>([]);
+  const [search, setSearch] = usePersistentState('mindsage:admin-resources:search', '');
+  const [categoryFilter, setCategoryFilter] = usePersistentState('mindsage:admin-resources:category', 'all');
+  const [typeFilter, setTypeFilter] = usePersistentState('mindsage:admin-resources:type', 'all');
+  const [statusFilter, setStatusFilter] = usePersistentState('mindsage:admin-resources:status', 'all');
+  const [page, setPage] = usePersistentState('mindsage:admin-resources:page', 1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
 
-  useEffect(() => {
-    if (!isHydrated) return;
-    if (!user || user.role !== 'admin') {
-      router.push('/');
-      return;
-    }
-    loadResources();
-  }, [isHydrated, user, categoryFilter, typeFilter, statusFilter, page]);
-
-  const loadResources = async () => {
+  const loadResources = useCallback(async () => {
     setLoading(true);
     try {
-      const params: any = { page, limit: 12 };
+      const params: ResourceListParams = { page, limit: 12 };
       if (categoryFilter !== 'all') params.category = categoryFilter;
       if (typeFilter !== 'all') params.type = typeFilter;
       if (statusFilter !== 'all') params.status = statusFilter;
@@ -99,7 +106,22 @@ export default function AdminResourcesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [categoryFilter, page, search, statusFilter, typeFilter]);
+
+  useEffect(() => {
+    if (!isHydrated) return;
+    if (!user || user.role !== 'admin') {
+      router.push('/');
+      return;
+    }
+    loadResources();
+  }, [isHydrated, loadResources, router, user]);
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(Math.max(1, totalPages));
+    }
+  }, [page, setPage, totalPages]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,7 +136,7 @@ export default function AdminResourcesPage() {
       await resourcesAPI.deleteResource(id);
       toast.success('Resource deleted successfully');
       loadResources();
-    } catch (error) {
+    } catch {
       toast.error('Failed to delete resource');
     }
   };
@@ -129,13 +151,13 @@ export default function AdminResourcesPage() {
         toast.success('Resource published');
       }
       loadResources();
-    } catch (error) {
+    } catch {
       toast.error('Failed to update resource status');
     }
   };
 
   const getTypeIcon = (type: string) => {
-    const icons: Record<string, any> = {
+    const icons: Record<string, React.ElementType> = {
       video: PlayCircleIcon,
       audio: MusicalNoteIcon,
       pdf: DocumentTextIcon,
@@ -148,18 +170,27 @@ export default function AdminResourcesPage() {
     return <Icon className="h-5 w-5" />;
   };
 
+  const getUploaderName = (uploadedBy: AdminResource['uploadedBy']) => {
+    if (typeof uploadedBy === 'object' && uploadedBy?.name) {
+      return uploadedBy.name;
+    }
+
+    return 'Unknown';
+  };
+
   if (!isHydrated || !user) return null;
 
   return (
     <div className="space-y-6">
       {/* Header */}
+      <BackButton href="/admin/dashboard" label="Back to Dashboard" />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Resource Management</h1>
           <p className="text-gray-600 mt-1">Manage all platform resources</p>
         </div>
         <Link
-          href="/resources/add"
+          href="/admin/resources/add"
           className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
         >
           <PlusIcon className="h-5 w-5" />
@@ -244,7 +275,7 @@ export default function AdminResourcesPage() {
           <h3 className="text-lg font-semibold text-gray-900 mb-2">No resources found</h3>
           <p className="text-gray-500 mb-4">Try adjusting your filters or add a new resource</p>
           <Link
-            href="/resources/add"
+            href="/admin/resources/add"
             className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 inline-flex items-center gap-2"
           >
             <PlusIcon className="h-5 w-5" />
@@ -313,7 +344,7 @@ export default function AdminResourcesPage() {
                 {resource.uploadedBy && (
                   <div className="flex items-center gap-2 text-xs text-gray-500 mb-4">
                     <UserIcon className="h-4 w-4" />
-                    <span>{resource.uploadedBy.name || 'Unknown'}</span>
+                    <span>{getUploaderName(resource.uploadedBy)}</span>
                   </div>
                 )}
 
@@ -336,7 +367,7 @@ export default function AdminResourcesPage() {
                 {/* Actions */}
                 <div className="flex items-center gap-2 pt-3 border-t border-gray-200">
                   <Link
-                    href={`/resources/edit/${resource._id}`}
+                    href={`/admin/resources/edit/${resource._id}`}
                     className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors"
                   >
                     <PencilIcon className="h-4 w-4" />

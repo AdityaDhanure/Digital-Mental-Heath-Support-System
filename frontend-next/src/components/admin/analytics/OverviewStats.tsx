@@ -6,9 +6,10 @@ import {
   CalendarIcon,
   BookOpenIcon,
 } from '@heroicons/react/24/outline';
+import type { DashboardStatsData } from '@/lib/api/admin';
 
 interface OverviewStatsProps {
-  stats: any;
+  stats: DashboardStatsData | null;
 }
 
 export default function OverviewStats({ stats }: OverviewStatsProps) {

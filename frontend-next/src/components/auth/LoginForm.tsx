@@ -45,7 +45,7 @@ export default function LoginForm() {
           localStorage.setItem('refreshToken', tokens.refreshToken);
         }
 
-        router.push('/dashboard');
+        router.push(user.role === 'admin' ? '/admin/dashboard' : '/dashboard');
       }
     } catch (error: any) {
       const apiError = error.response?.data;

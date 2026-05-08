@@ -6,10 +6,11 @@ import {
   CheckCircleIcon,
   UserGroupIcon,
 } from '@heroicons/react/24/outline';
+import type { CommunityAnalyticsData, DashboardStatsData } from '@/lib/api/admin';
 
 interface CommunityOverviewProps {
-  stats: any;
-  communityAnalytics: any;
+  stats: DashboardStatsData | null;
+  communityAnalytics: CommunityAnalyticsData | null;
 }
 
 export default function CommunityOverview({ stats, communityAnalytics }: CommunityOverviewProps) {

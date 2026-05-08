@@ -1,7 +1,9 @@
 'use client';
 
+import type { ChatAnalyticsData } from '@/lib/api/admin';
+
 interface ChatAnalyticsProps {
-  chatAnalytics: any;
+  chatAnalytics: ChatAnalyticsData | null;
 }
 
 export default function ChatAnalytics({ chatAnalytics }: ChatAnalyticsProps) {
@@ -19,7 +21,7 @@ export default function ChatAnalytics({ chatAnalytics }: ChatAnalyticsProps) {
     <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
       <h2 className="text-lg font-semibold text-gray-900 mb-4">Chat Safety Overview</h2>
       <div className="space-y-3">
-        {chatAnalytics?.riskDistribution?.map((risk: any) => (
+        {chatAnalytics?.riskDistribution?.map((risk) => (
           <div key={risk._id || 'unknown'} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
             <div className="flex items-center gap-3">
               <div className={`w-3 h-3 rounded-full ${getRiskColor(risk._id)}`}></div>

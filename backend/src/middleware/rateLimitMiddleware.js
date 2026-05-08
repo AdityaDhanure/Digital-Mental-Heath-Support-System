@@ -62,6 +62,9 @@ const getStore = (prefix) => {
 const generalLimiter = rateLimit({
   windowMs: RATE_LIMIT_CONFIG.WINDOW_MS,
   max: RATE_LIMIT_CONFIG.MAX_REQUESTS,
+  // Dashboard/list pages can legitimately make repeated read requests,
+  // especially in Next dev mode. Keep mutation endpoints protected here.
+  skip: (req) => ['GET', 'HEAD', 'OPTIONS'].includes(req.method),
   message: {
     status: 'error',
     message: 'Too many requests from this IP, please try again later.',

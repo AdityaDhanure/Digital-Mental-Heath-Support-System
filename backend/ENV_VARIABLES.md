@@ -132,12 +132,14 @@ ALLOWED_ORIGINS=http://localhost:3000,https://your-domain.com  # Additional allo
 ```env
 AI_SERVICE_URL=http://localhost:8001            # Python AI Service URL
 ANALYTICS_SERVICE_URL=http://localhost:8002     # Python Analytics Service URL
-REDIS_URL=redis://localhost:6379                # Redis URL (optional, for distributed rate limiting)
+REDIS_URL=redis://localhost:6379                # Redis URL (optional, for rate limiting + data caching)
+DATA_CACHE_TTL_SECONDS=120                      # Default Redis/data-cache TTL for GET responses
 ```
 
 **Used in:**
 - `controllers/adminController.js` - Service health checks
 - `middleware/rateLimitMiddleware.js` - Redis-based rate limiting
+- `utils/cache.js` - Redis-backed GET response caching with memory fallback
 
 ---
 

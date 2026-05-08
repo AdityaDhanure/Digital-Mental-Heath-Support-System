@@ -62,6 +62,11 @@ A modern Next.js 16 frontend for a Digital Mental Health and Psychological Suppo
   - View other users
   - Session statistics
 
+- **Performance & State Persistence**
+  - In-memory GET response caching in the Axios client for fast route revisits
+  - Automatic cache clearing after non-GET mutations
+  - Persistent page-level UI state for tabs, filters, search text, selected dates, ranges, and pagination
+
 ## Tech Stack
 
 - **Framework**: Next.js 16
@@ -79,7 +84,7 @@ A modern Next.js 16 frontend for a Digital Mental Health and Psychological Suppo
 ## Project Structure
 
 ```
-frontend/
+frontend-next/
 ├── public/
 │   └── favicon.ico
 ├── src/
@@ -120,8 +125,7 @@ frontend/
 │   │   │   ├── Input.tsx
 │   │   │   ├── Card.tsx
 │   │   │   ├── Loading.tsx
-│   │   │   ├── Alert.tsx
-│   │   │   └── Modal.tsx
+│   │   │   └── BackButton.tsx
 │   │   │
 │   │   ├── layout/
 │   │   │   ├── Header.tsx
@@ -132,7 +136,7 @@ frontend/
 │   │   │
 │   │   ├── dashboard/
 │   │   │   ├── counselor/
-│   │   │   │   └─��� CounselorDashboard.tsx
+│   │   │   │   └── CounselorDashboard.tsx
 │   │   │   ├── student/
 │   │   │   │   └── StudentDashboard.tsx
 │   │   │   └── shared/
@@ -213,7 +217,8 @@ frontend/
 │   │   │   ├── notifications.ts
 │   │   │   └── admin.ts
 │   │   ├── hooks/
-│   │   │   └── useAuth.ts
+│   │   │   ├── useAuth.ts
+│   │   │   └── usePersistentState.ts
 │   │   └── utils/
 │   │       ├── index.ts
 │   │       └── cn.ts
@@ -282,9 +287,11 @@ frontend/
    NEXT_PUBLIC_ENABLE_BOOKING=true
    NEXT_PUBLIC_ENABLE_COMMUNITY=true
    
-   # Analytics (optional)
-   NEXT_PUBLIC_GA_ID=
-   ```
+# Analytics (optional)
+NEXT_PUBLIC_GA_ID=
+```
+
+`NEXT_PUBLIC_GA_ID` is only for optional Google Analytics tracking. It is not used for platform analytics charts; those charts are fetched from the backend `/api/admin/analytics/*` endpoints.
 
 5. **Start development server**
    ```bash
@@ -416,8 +423,7 @@ npm start
 | Input | Form input with validation |
 | Card | Content container |
 | Loading | Loading spinner |
-| Alert | Notification alerts |
-| Modal | Dialog modal |
+| BackButton | Route-aware back navigation |
 
 ### Layout Components
 | Component | Description |
@@ -509,18 +515,43 @@ Using Zustand stores:
 ## API Integration
 
 Axios instance with interceptors:
-- Request/Response logging
 - Error handling
 - Token refresh
 - Auth headers
+- In-memory GET response cache for fast in-session navigation
+- Automatic API cache clearing after POST/PATCH/PUT/DELETE requests
+
+The frontend intentionally keeps the response cache in memory only. This makes revisiting pages fast without storing sensitive mental-health/admin API payloads in `localStorage` or `sessionStorage`.
+
+## Persistent UI State
+
+The shared `usePersistentState` hook stores page-level UI choices in `localStorage`, including:
+
+- Admin analytics selected tab and period
+- Admin resource/user/community search, filters, and pagination
+- Booking tab and status filter
+- Settings tab
+- Student/counselor resources filters
+- Community view mode and category
+- Notifications filter
+- Counselor student search
+- Chat sidebar open/closed state
+- Availability selected date
+
+Transient state such as open modals, selected records, loading flags, and unsaved drafts is intentionally not persisted.
 
 ## Environment Variables
 
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `NEXT_PUBLIC_API_URL` | Backend API URL | http://localhost:5000/api |
-| `NEXT_PUBLIC_SOCKET_URL` | Socket server | http://localhost:5000 |
-| `NEXT_PUBLIC_APP_NAME` | App name | Mental Health |
+| `NEXT_PUBLIC_AI_SERVICE_URL` | Python AI service URL | http://localhost:8001 |
+| `NEXT_PUBLIC_APP_NAME` | App name | MindSage AI |
+| `NEXT_PUBLIC_APP_URL` | Frontend app URL | http://localhost:3000 |
+| `NEXT_PUBLIC_ENABLE_CHAT` | Enable AI chat feature | true |
+| `NEXT_PUBLIC_ENABLE_BOOKING` | Enable booking feature | true |
+| `NEXT_PUBLIC_ENABLE_COMMUNITY` | Enable community feature | true |
+| `NEXT_PUBLIC_GA_ID` | Optional Google Analytics measurement ID | empty |
 
 ## Scripts
 

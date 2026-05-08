@@ -180,14 +180,14 @@ export const generateAnalyticsReport = async (reportType, startDate, endDate, pe
     highRiskCount
   ] = await Promise.all([
     Chat.aggregate([
-      { $match: { createdAt: { $gte: start }, 'sentimentAnalysis.overallSentiment': { $exists: true } } },
+      { $match: { createdAt: { $gte: start, $lte: endDateObj }, 'sentimentAnalysis.overallSentiment': { $exists: true } } },
       { $group: { _id: '$sentimentAnalysis.overallSentiment', count: { $sum: 1 } } }
     ]),
     Chat.aggregate([
-      { $match: { createdAt: { $gte: start } } },
+      { $match: { createdAt: { $gte: start, $lte: endDateObj } } },
       { $group: { _id: '$safetyCheck.riskLevel', count: { $sum: 1 } } }
     ]),
-    Chat.countDocuments({ createdAt: { $gte: start }, 'safetyCheck.riskLevel': { $in: ['high', 'critical'] } })
+    Chat.countDocuments({ createdAt: { $gte: start, $lte: endDateObj }, 'safetyCheck.riskLevel': { $in: ['high', 'critical'] } })
   ]);
 
   // Booking analytics

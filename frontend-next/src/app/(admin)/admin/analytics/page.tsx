@@ -1,7 +1,16 @@
 'use client';
+import BackButton from '@/components/common/BackButton';
 
-import { useState, useEffect } from 'react';
-import { adminAPI } from '@/lib/api/admin';
+import { useCallback, useState, useEffect } from 'react';
+import {
+  adminAPI,
+  type BookingAnalyticsData,
+  type ChatAnalyticsData,
+  type CommunityAnalyticsData,
+  type DashboardStatsData,
+  type DateBucket,
+  type UserForAnalysis,
+} from '@/lib/api/admin';
 import {
   ArrowTrendingUpIcon,
   ChatBubbleLeftRightIcon,
@@ -13,6 +22,7 @@ import {
 import { ExclamationTriangleIcon as ExclamationTriangleIconSolid } from '@heroicons/react/24/solid';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/store/authStore';
+import { usePersistentState } from '@/lib/hooks/usePersistentState';
 import { useRouter } from 'next/navigation';
 import {
   OverviewStats,
@@ -30,20 +40,90 @@ const periodOptions = [
   { value: '90', label: 'Last 90 days' },
 ];
 
+const tabOptions = [
+  { id: 'overview', label: 'Overview', icon: ArrowTrendingUpIcon },
+  { id: 'chats', label: 'Chat Analysis', icon: ChatBubbleLeftRightIcon },
+  { id: 'sentiment', label: 'Sentiment & Tone', icon: HeartIcon },
+  { id: 'risk', label: 'Risk Assessment', icon: ShieldExclamationIcon },
+];
+
+type AnalyticsTab = (typeof tabOptions)[number]['id'];
+
+interface UserChatAnalysisData {
+  user?: {
+    _id: string;
+    name: string;
+    email: string;
+    memberSince?: string;
+    lastActive?: string;
+  };
+  summary?: {
+    totalSessions?: number;
+    totalMessages?: number;
+    averageMessagesPerSession?: number;
+    highRiskSessions?: number;
+    dominantSentiment?: string;
+    period?: string;
+  };
+  sentimentAnalysis?: {
+    distribution?: Record<string, number>;
+    dominant?: string;
+  };
+  stressAnalysis?: {
+    distribution?: Record<string, number>;
+    trend?: Array<{ level: string; count: number }>;
+  };
+  riskAnalysis?: {
+    distribution?: Record<string, number>;
+    highRiskCount?: number;
+  };
+  emotionAnalysis?: {
+    topEmotions?: Array<{ emotion: string; score: number }>;
+  };
+  sessions?: Array<{
+    _id: string;
+    title?: string;
+    messageCount: number;
+    sentiment: string;
+    stressLevel: string;
+    riskLevel: string;
+    createdAt: string;
+  }>;
+}
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (typeof error !== 'object' || error === null || !('response' in error)) {
+    return error instanceof Error ? error.message : fallback;
+  }
+
+  const response = (error as { response?: { data?: { message?: string } } }).response;
+  return response?.data?.message || fallback;
+};
+
+const isValidPeriod = (value: unknown): value is string => {
+  return typeof value === 'string' && periodOptions.some((option) => option.value === value);
+};
+
+const isValidTab = (value: unknown): value is AnalyticsTab => {
+  return typeof value === 'string' && tabOptions.some((option) => option.id === value);
+};
+
 export default function AnalyticsPage() {
   const router = useRouter();
   const { user, isHydrated } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [period, setPeriod] = useState('30');
-  const [stats, setStats] = useState<any>(null);
-  const [chatAnalytics, setChatAnalytics] = useState<any>(null);
-  const [bookingAnalytics, setBookingAnalytics] = useState<any>(null);
-  const [communityAnalytics, setCommunityAnalytics] = useState<any>(null);
+  const [period, setPeriod] = usePersistentState('mindsage:admin-analytics:period', '30', {
+    validate: isValidPeriod,
+  });
+  const [stats, setStats] = useState<DashboardStatsData | null>(null);
+  const [chatAnalytics, setChatAnalytics] = useState<ChatAnalyticsData | null>(null);
+  const [bookingAnalytics, setBookingAnalytics] = useState<BookingAnalyticsData | null>(null);
+  const [communityAnalytics, setCommunityAnalytics] = useState<CommunityAnalyticsData | null>(null);
   
   const [showUserModal, setShowUserModal] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<any>(null);
-  const [userChatAnalysis, setUserChatAnalysis] = useState<any>(null);
+  const [selectedUser, setSelectedUser] = useState<UserForAnalysis | null>(null);
+  const [userChatAnalysis, setUserChatAnalysis] = useState<UserChatAnalysisData | null>(null);
   const [userAnalysisLoading, setUserAnalysisLoading] = useState(false);
   
   const [showReportModal, setShowReportModal] = useState(false);
@@ -51,27 +131,34 @@ export default function AnalyticsPage() {
   const [generatingReport, setGeneratingReport] = useState(false);
   
   const [showUserSelector, setShowUserSelector] = useState(false);
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<UserForAnalysis[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [userSearch, setUserSearch] = useState('');
   
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = usePersistentState<AnalyticsTab>('mindsage:admin-analytics:tab', 'overview', {
+    validate: isValidTab,
+  });
 
-  useEffect(() => {
-    if (!isHydrated) return;
-    if (!user || user.role !== 'admin') {
-      router.push('/');
-      return;
-    }
-    loadAllAnalytics();
-  }, [isHydrated, user, period]);
+  const getPeriodDates = (p: string) => {
+    const days = parseInt(p) || 30;
+    const end = new Date();
+    const start = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    return { startDate: start.toISOString(), endDate: end.toISOString() };
+  };
 
-  const loadAllAnalytics = async () => {
+  const periodLabel = periodOptions.find(o => o.value === period)?.label ?? 'Last 30 days';
+  const chatVolumeTrend = chatAnalytics?.chatVolumeTrend ?? [];
+  const sentimentDistribution = chatAnalytics?.sentimentDistribution ?? [];
+  const riskDistribution = chatAnalytics?.riskDistribution ?? [];
+  const highRiskCount = chatAnalytics?.highRiskCount ?? 0;
+
+  const loadAllAnalytics = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
+      const { startDate, endDate } = getPeriodDates(period);
       const [statsRes, chatRes, bookingRes, communityRes] = await Promise.all([
-        adminAPI.getDashboardStats(),
+        adminAPI.getDashboardStats({ startDate, endDate }),
         adminAPI.getChatAnalytics(period),
         adminAPI.getBookingAnalytics(period),
         adminAPI.getCommunityAnalytics(period),
@@ -81,13 +168,22 @@ export default function AnalyticsPage() {
       setChatAnalytics(chatRes?.data);
       setBookingAnalytics(bookingRes?.data);
       setCommunityAnalytics(communityRes?.data);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Failed to load analytics:', err);
-      setError(err?.response?.data?.message || err?.message || 'Failed to load analytics');
+      setError(getErrorMessage(err, 'Failed to load analytics'));
     } finally {
       setLoading(false);
     }
-  };
+  }, [period]);
+
+  useEffect(() => {
+    if (!isHydrated) return;
+    if (!user || user.role !== 'admin') {
+      router.push('/');
+      return;
+    }
+    loadAllAnalytics();
+  }, [isHydrated, loadAllAnalytics, router, user]);
 
   const loadUsers = async (search: string = '') => {
     setUsersLoading(true);
@@ -101,7 +197,7 @@ export default function AnalyticsPage() {
     }
   };
 
-  const handleSelectUser = (selectedUser: any) => {
+  const handleSelectUser = (selectedUser: UserForAnalysis) => {
     setSelectedUser(selectedUser);
     setShowUserSelector(false);
     setShowUserModal(true);
@@ -123,7 +219,8 @@ export default function AnalyticsPage() {
   const handleGenerateReport = async () => {
     setGeneratingReport(true);
     try {
-      await adminAPI.downloadReport(reportType);
+      const { startDate, endDate } = getPeriodDates(period);
+      await adminAPI.downloadReport(reportType, startDate, endDate);
       toast.success('Report downloaded successfully!');
       setShowReportModal(false);
     } catch {
@@ -150,10 +247,11 @@ export default function AnalyticsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
+      <BackButton href="/admin/dashboard" label="Back to Dashboard" />
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
-          <p className="text-gray-600 mt-1">Platform insights, chat analysis & reports</p>
+          <p className="text-gray-600 mt-1">Platform insights for <span className="font-semibold text-purple-600">{periodLabel}</span></p>
         </div>
         <div className="flex items-center gap-3">
           <select
@@ -185,12 +283,7 @@ export default function AnalyticsPage() {
       {/* Tabs */}
       <div className="border-b border-gray-200">
         <nav className="flex gap-6">
-          {[
-            { id: 'overview', label: 'Overview', icon: ArrowTrendingUpIcon },
-            { id: 'chats', label: 'Chat Analysis', icon: ChatBubbleLeftRightIcon },
-            { id: 'sentiment', label: 'Sentiment & Tone', icon: HeartIcon },
-            { id: 'risk', label: 'Risk Assessment', icon: ShieldExclamationIcon },
-          ].map((tab) => (
+          {tabOptions.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
@@ -234,6 +327,9 @@ export default function AnalyticsPage() {
           {/* Overview Tab */}
           {activeTab === 'overview' && (
             <>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm text-gray-500">Showing data for <span className="font-semibold text-gray-700">{periodLabel}</span></p>
+              </div>
               <OverviewStats stats={stats} />
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <ChatAnalytics chatAnalytics={chatAnalytics} />
@@ -247,27 +343,38 @@ export default function AnalyticsPage() {
           {activeTab === 'chats' && (
             <div className="space-y-6">
               <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Chat Volume Trend</h2>
-                <div className="h-64 flex items-end gap-1">
-                  {chatAnalytics?.chatVolumeTrend?.slice(-14).map((day: any, idx: number) => {
-                    const maxCount = Math.max(...chatAnalytics.chatVolumeTrend.map((d: any) => d.count), 1);
-                    const height = (day.count / maxCount) * 100;
-                    return (
-                      <div key={idx} className="flex-1 flex flex-col items-center gap-1">
-                        <div
-                          className="w-full bg-purple-500 rounded-t hover:bg-purple-600 transition-colors"
-                          style={{ height: `${height}%`, minHeight: height > 0 ? '4px' : '0' }}
-                          title={`${day.count} chats`}
-                        />
-                        <span className="text-xs text-gray-500 rotate-45 origin-top-left mt-2">
-                          {new Date(day._id.year, day._id.month - 1, day._id.day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                        </span>
-                      </div>
-                    );
-                  })}
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-gray-900">Chat Volume Trend</h2>
+                  <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">{periodLabel}</span>
                 </div>
-                {(!chatAnalytics?.chatVolumeTrend || chatAnalytics.chatVolumeTrend.length === 0) && (
-                  <p className="text-gray-500 text-center py-8">No chat data available for this period</p>
+                {chatVolumeTrend.length > 0 ? (
+                  <div className="h-56 flex items-end gap-1 pt-8 pb-6 relative">
+                    {chatVolumeTrend.slice(-14).map((day: DateBucket, idx: number) => {
+                      const count = Number(day.count) || 0;
+                      const maxCount = Math.max(...chatVolumeTrend.map((d) => Number(d.count) || 0), 1);
+                      const height = Math.max((count / maxCount) * 100, count > 0 ? 4 : 0);
+                      const date = new Date(day._id.year, day._id.month - 1, day._id.day);
+                      return (
+                        <div key={idx} className="flex-1 h-full min-w-0 flex items-end justify-center group relative">
+                          <div className="absolute bottom-6 mb-1 hidden group-hover:flex flex-col items-center z-10">
+                            <div className="bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                              {count} chat{count !== 1 ? 's' : ''}
+                            </div>
+                            <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800" />
+                          </div>
+                          <div
+                            className="w-full max-w-8 bg-purple-400 hover:bg-purple-600 rounded-t transition-all cursor-pointer"
+                            style={{ height: `${height}%` }}
+                          />
+                          <span className="text-[10px] text-gray-400 absolute -bottom-5 truncate w-full text-center">
+                            {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="h-56 flex items-center justify-center text-gray-400 text-sm">No chat data for this period</div>
                 )}
               </div>
 
@@ -275,8 +382,8 @@ export default function AnalyticsPage() {
               <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Sentiment Distribution</h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {chatAnalytics?.sentimentDistribution?.map((sent: any) => {
-                    const total = chatAnalytics.sentimentDistribution.reduce((sum: number, s: any) => sum + s.count, 0);
+                  {sentimentDistribution.map((sent) => {
+                    const total = sentimentDistribution.reduce((sum, s) => sum + s.count, 0);
                     const percentage = total > 0 ? ((sent.count / total) * 100).toFixed(1) : '0';
                     return (
                       <div key={sent._id} className={`p-4 rounded-lg border ${
@@ -291,20 +398,20 @@ export default function AnalyticsPage() {
                       </div>
                     );
                   })}
-                  {(!chatAnalytics?.sentimentDistribution || chatAnalytics.sentimentDistribution.length === 0) && (
+                  {sentimentDistribution.length === 0 && (
                     <p className="col-span-4 text-gray-500 text-center py-4">No sentiment data available</p>
                   )}
                 </div>
               </div>
 
-              {chatAnalytics?.highRiskCount > 0 && (
+              {highRiskCount > 0 && (
                 <div className="bg-red-50 border border-red-200 rounded-xl p-6">
                   <div className="flex items-start gap-4">
                     <ExclamationTriangleIconSolid className="h-8 w-8 text-red-500 flex-shrink-0" />
                     <div>
                       <h3 className="text-lg font-semibold text-red-900">High Risk Sessions Detected</h3>
                       <p className="text-red-700 mt-1">
-                        {chatAnalytics.highRiskCount} session(s) flagged with high or critical risk levels.
+                        {highRiskCount} session(s) flagged with high or critical risk levels.
                         These may require counselor intervention.
                       </p>
                     </div>
@@ -318,10 +425,13 @@ export default function AnalyticsPage() {
           {activeTab === 'sentiment' && (
             <div className="space-y-6">
               <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Overall Sentiment Analysis</h2>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-gray-900">Overall Sentiment Analysis</h2>
+                  <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">{periodLabel}</span>
+                </div>
                 <div className="space-y-4">
-                  {chatAnalytics?.sentimentDistribution?.map((sent: any) => {
-                    const total = chatAnalytics.sentimentDistribution.reduce((sum: number, s: any) => sum + s.count, 0);
+                  {sentimentDistribution.map((sent) => {
+                    const total = sentimentDistribution.reduce((sum, s) => sum + s.count, 0);
                     const percentage = total > 0 ? (sent.count / total) * 100 : 0;
                     return (
                       <div key={sent._id} className="flex items-center gap-4">
@@ -354,21 +464,21 @@ export default function AnalyticsPage() {
                   <div className="bg-blue-50 rounded-lg p-4 text-center">
                     <span className="text-3xl">😊</span>
                     <p className="text-2xl font-bold text-gray-900 mt-2">
-                      {chatAnalytics?.sentimentDistribution?.find((s: any) => s._id === 'positive')?.count || 0}
+                      {sentimentDistribution.find((s) => s._id === 'positive')?.count || 0}
                     </p>
                     <p className="text-sm text-gray-600">Positive Tone Sessions</p>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-4 text-center">
                     <span className="text-3xl">😐</span>
                     <p className="text-2xl font-bold text-gray-900 mt-2">
-                      {chatAnalytics?.sentimentDistribution?.find((s: any) => s._id === 'neutral')?.count || 0}
+                      {sentimentDistribution.find((s) => s._id === 'neutral')?.count || 0}
                     </p>
                     <p className="text-sm text-gray-600">Neutral Tone Sessions</p>
                   </div>
                   <div className="bg-red-50 rounded-lg p-4 text-center">
                     <span className="text-3xl">😔</span>
                     <p className="text-2xl font-bold text-gray-900 mt-2">
-                      {chatAnalytics?.sentimentDistribution?.find((s: any) => s._id === 'negative')?.count || 0}
+                      {sentimentDistribution.find((s) => s._id === 'negative')?.count || 0}
                     </p>
                     <p className="text-sm text-gray-600">Negative Tone Sessions</p>
                   </div>
@@ -384,7 +494,7 @@ export default function AnalyticsPage() {
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Risk Level Distribution</h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {['low', 'medium', 'high', 'critical'].map((level) => {
-                    const riskData = chatAnalytics?.riskDistribution?.find((r: any) => r._id === level);
+                    const riskData = riskDistribution.find((r) => r._id === level);
                     return (
                       <div
                         key={level}
@@ -408,13 +518,13 @@ export default function AnalyticsPage() {
                 </div>
               </div>
 
-              {chatAnalytics?.highRiskCount > 0 && (
+              {highRiskCount > 0 && (
                 <div className="bg-red-50 border-2 border-red-300 rounded-xl p-6">
                   <div className="flex items-start gap-4">
                     <ShieldExclamationIcon className="h-10 w-10 text-red-600 flex-shrink-0" />
                     <div className="flex-1">
                       <h3 className="text-xl font-bold text-red-900">
-                        {chatAnalytics.highRiskCount} High Risk Session(s) Require Attention
+                        {highRiskCount} High Risk Session(s) Require Attention
                       </h3>
                       <p className="text-red-700 mt-2">
                         These sessions have been flagged with elevated emotional risk scores.

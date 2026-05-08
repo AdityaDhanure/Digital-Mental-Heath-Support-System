@@ -6,9 +6,10 @@ import {
   CalendarIcon,
   ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
+import type { BookingAnalyticsData } from '@/lib/api/admin';
 
 interface BookingAnalyticsProps {
-  bookingAnalytics: any;
+  bookingAnalytics: BookingAnalyticsData | null;
 }
 
 export default function BookingAnalytics({ bookingAnalytics }: BookingAnalyticsProps) {
@@ -26,7 +27,7 @@ export default function BookingAnalytics({ bookingAnalytics }: BookingAnalyticsP
     <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
       <h2 className="text-lg font-semibold text-gray-900 mb-4">Booking Status</h2>
       <div className="space-y-3">
-        {bookingAnalytics?.statusDistribution?.map((status: any) => (
+        {bookingAnalytics?.statusDistribution?.map((status) => (
           <div key={status._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
             <div className="flex items-center gap-3">
               {status._id === 'completed' && <CheckCircleIcon className="h-5 w-5 text-green-500" />}

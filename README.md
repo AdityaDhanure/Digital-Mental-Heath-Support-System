@@ -31,6 +31,8 @@ This is a **Digital Mental Health and Psychological Support System** designed to
 | **Backend** | Express.js | RESTful API, authentication, database |
 | **Frontend** | Next.js 16 | User interface |
 | **AI Services** | FastAPI | AI chat, RAG, safety monitoring |
+| **Analytics Service** | FastAPI | Report generation from backend-supplied metrics |
+| **Redis** | Redis | Optional GET response caching and distributed rate limiting |
 
 ### Core Functionalities
 
@@ -67,8 +69,20 @@ This is a **Digital Mental Health and Psychological Support System** designed to
             ┌────────────────┐      ┌────────────────┐       ┌────────────────┐
             │    MongoDB     │      │  Python AI     │       │  Cloudinary    │
             │   Database     │      │   Services     │       │    Storage     │
-            │   Port: 27017  │      │   Port: 8000   │       │                │
+            │   Port: 27017  │      │   Port: 8001   │       │                │
             └────────────────┘      └────────────────┘       └────────────────┘
+                                             │
+                                             ▼
+                                    ┌─────────────────┐
+                                    │ Analytics Svc   │
+                                    │  FastAPI: 8002  │
+                                    └─────────────────┘
+                                             │
+                                             ▼
+                                    ┌─────────────────┐
+                                    │ Redis (optional)│
+                                    │ cache/rate limit│
+                                    └─────────────────┘
 ```
 
 ### Communication Flow
@@ -78,6 +92,7 @@ This is a **Digital Mental Health and Psychological Support System** designed to
 3. **Backend → AI Services**: REST calls to FastAPI for AI processing
 4. **Backend → Database**: MongoDB for persistent storage
 5. **Backend → Cloudinary**: File uploads (images, documents)
+6. **Backend → Redis**: Caches safe GET responses and rate-limit counters when `REDIS_URL` is set
 
 ---
 
@@ -106,7 +121,7 @@ This is a **Digital Mental Health and Psychological Support System** designed to
 
 | Technology | Version | Purpose |
 |-----------|---------|---------|
-| Next.js | 16.1 | React framework |
+| Next.js | 16.2 | React framework |
 | React | 19.2 | UI library |
 | TypeScript | 5 | Type safety |
 | Tailwind CSS | 3.4 | Styling |
@@ -471,7 +486,7 @@ This is a **Digital Mental Health and Psychological Support System** designed to
 
 | Category | Components |
 |----------|-----------|
-| **Common** | Button, Input, Card, Loading, Alert, Modal |
+| **Common** | Button, Input, Card, Loading, BackButton |
 | **Layout** | Header, Footer, Sidebar, DashboardLayout, ProtectedRoute |
 | **Dashboard** | StudentDashboard, CounselorDashboard, StatCard, QuickAction, BookingCard |
 | **Community** | PostCard, PostList, CreatePostModal, ReplyModal |
@@ -516,7 +531,15 @@ This is a **Digital Mental Health and Psychological Support System** designed to
 - Request: Add auth token
 - Response: Handle errors globally
 - Transform: JSON parsing
+- In-memory GET response cache for fast in-session route revisits
 ```
+
+### UI State and Data Caching
+
+- Page-level UI state is persisted with `usePersistentState`, including analytics tabs/ranges, admin filters, bookings tabs, resource/community filters, notification filters, settings tabs, chat sidebar state, and availability selected date.
+- The frontend API client caches fresh GET responses in memory for the current browser session, so returning to a previously visited page can render data immediately without waiting on a duplicate network call.
+- The backend uses Redis-backed response caching for safe GET endpoints when `REDIS_URL` is configured. If Redis is unavailable, it falls back to process memory caching.
+- Backend write routes invalidate affected cache namespaces so create/update/delete actions do not leave stale data behind.
 
 ---
 
@@ -688,12 +711,12 @@ This is a **Digital Mental Health and Psychological Support System** designed to
 │   │   │   ├── sanitizer.js
 │   │   │   ├── logger.js
 │   │   │   └── reportGenerator.js
-│   │   ├── app.js
-│   │   └── server.js
+│   │   └── app.js
+│   ├── server.js
 │   ├── package.json
 │   └── README.md
 │
-├── frontend/                   # Next.js 16 Frontend
+├── frontend-next/              # Next.js 16 Frontend
 │   ├── src/
 │   │   ├── app/
 │   │   │   ├── (auth)/
@@ -718,7 +741,7 @@ This is a **Digital Mental Health and Psychological Support System** designed to
 │   ├── package.json
 │   └── README.md
 │
-├── python-services/           # FastAPI AI Services
+├── python-services/           # FastAPI AI + Analytics Services
 │   ├── ai_service/
 │   │   ├── config/
 │   │   ├── models/
@@ -732,6 +755,7 @@ This is a **Digital Mental Health and Psychological Support System** designed to
 │   │   ├── main.py
 │   │   └── dependencies.py
 │   ├── analytics_service/
+│   │   └── main.py
 │   ├── requirements.txt
 │   └── README.md
 │
@@ -875,7 +899,7 @@ npm start    # Production
 ### Frontend Setup
 
 ```bash
-cd frontend
+cd frontend-next
 npm install
 # Create .env.local
 npm run dev
@@ -889,7 +913,9 @@ python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 # Configure ai_service/.env
-uvicorn ai_service.main:app --reload
+uvicorn ai_service.main:app --host 0.0.0.0 --port 8001 --reload
+# Optional analytics/report service:
+uvicorn analytics_service.main:app --host 0.0.0.0 --port 8002 --reload
 ```
 
 ---
@@ -961,7 +987,9 @@ uvicorn ai_service.main:app --reload
 
 ### Performance Optimizations
 
-- [ ] Redis caching for frequently accessed data
+- [x] Redis-backed GET response caching for frequently accessed data
+- [x] Frontend in-memory GET response cache for fast route revisits
+- [x] Persistent page-level UI state for filters/tabs/ranges
 - [ ] Database query optimization
 - [ ] CDN for static assets
 - [ ] Lazy loading for components
@@ -981,5 +1009,5 @@ Mental Health Project Team
 ## Related Documentation
 
 - [Backend README](./backend/README.md)
-- [Frontend README](./frontend/README.md)
+- [Frontend README](./frontend-next/README.md)
 - [Python Services README](./python-services/README.md)

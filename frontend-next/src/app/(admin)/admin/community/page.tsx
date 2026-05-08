@@ -1,4 +1,5 @@
 'use client';
+import BackButton from '@/components/common/BackButton';
 
 import { useState, useEffect } from 'react';
 import { communityAPI } from '@/lib/api/community';
@@ -16,6 +17,7 @@ import {
 import { FlagIcon as FlagIconSolid } from '@heroicons/react/24/solid';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/store/authStore';
+import { usePersistentState } from '@/lib/hooks/usePersistentState';
 import { useRouter } from 'next/navigation';
 
 const categories = [
@@ -44,11 +46,11 @@ export default function AdminCommunityPage() {
   const { user, isHydrated } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState<any[]>([]);
-  const [search, setSearch] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [flaggedOnly, setFlaggedOnly] = useState(false);
-  const [page, setPage] = useState(1);
+  const [search, setSearch] = usePersistentState('mindsage:admin-community:search', '');
+  const [categoryFilter, setCategoryFilter] = usePersistentState('mindsage:admin-community:category', 'all');
+  const [statusFilter, setStatusFilter] = usePersistentState('mindsage:admin-community:status', 'all');
+  const [flaggedOnly, setFlaggedOnly] = usePersistentState('mindsage:admin-community:flagged-only', false);
+  const [page, setPage] = usePersistentState('mindsage:admin-community:page', 1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [selectedPost, setSelectedPost] = useState<any>(null);
@@ -62,6 +64,12 @@ export default function AdminCommunityPage() {
     }
     loadPosts();
   }, [isHydrated, user, categoryFilter, statusFilter, flaggedOnly, page]);
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(Math.max(1, totalPages));
+    }
+  }, [page, setPage, totalPages]);
 
   const loadPosts = async () => {
     setLoading(true);
@@ -140,6 +148,7 @@ export default function AdminCommunityPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
+      <BackButton href="/admin/dashboard" label="Back to Dashboard" />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Community Management</h1>

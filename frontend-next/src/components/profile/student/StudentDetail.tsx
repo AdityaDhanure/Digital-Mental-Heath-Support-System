@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/components/common/Card';
+import { usePersistentState } from '@/lib/hooks/usePersistentState';
 import { ArrowLeftIcon, ChatBubbleLeftRightIcon, CalendarIcon, EnvelopeIcon, PhoneIcon, UserIcon, BookOpenIcon, HeartIcon } from '@heroicons/react/24/outline';
 import { usersAPI } from '@/lib/api/users';
 import { bookingAPI } from '@/lib/api/booking';
@@ -81,7 +82,10 @@ export default function StudentDetail({ studentId }: { studentId: string }) {
   const [recentBookings, setRecentBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'sessions' | 'chat'>('overview');
+  const [activeTab, setActiveTab] = usePersistentState<'overview' | 'sessions' | 'chat'>(
+    `mindsage:student-detail:${studentId}:tab`,
+    'overview'
+  );
 
   useEffect(() => {
     loadStudentProfile();

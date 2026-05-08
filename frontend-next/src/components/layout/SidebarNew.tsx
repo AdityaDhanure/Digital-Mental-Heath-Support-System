@@ -1,7 +1,7 @@
 // Unified Sidebar Component for Student, Counselor, and Admin
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
@@ -16,7 +16,6 @@ import {
   ArrowLeftOnRectangleIcon,
   Bars3Icon,
   XMarkIcon,
-  HeartIcon,
   BellIcon,
   UserCircleIcon,
   ChartBarIcon,
@@ -54,6 +53,7 @@ const adminNav: NavItem[] = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: HomeIcon },
   { name: 'Analytics', href: '/admin/analytics', icon: ChartBarIcon },
   { name: 'Resources', href: '/admin/resources', icon: BookOpenIcon },
+  { name: 'Notifications', href: '/admin/notifications', icon: BellIcon },
   { name: 'Community', href: '/admin/community', icon: MegaphoneIcon },
   { name: 'Users', href: '/admin/users', icon: ShieldCheckIcon },
   // { name: 'Profile', href: '/profile', icon: UserCircleIcon },
@@ -63,11 +63,6 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { user, logout, isHydrated } = useAuthStore();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
 
   const handleLogout = () => {
     logout();
@@ -98,7 +93,7 @@ export default function Sidebar() {
 
   const navItems = getNavItems();
 
-  if (!isMounted || !isHydrated) {
+  if (!isHydrated) {
     return null;
   }
 

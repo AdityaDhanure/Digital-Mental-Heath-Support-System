@@ -2,6 +2,7 @@ import { ResourcesHeader, ResourceGrid } from '@/components/resources/shared';
 import { Resource } from '@/types/resource.types';
 import { useState, useEffect } from 'react';
 import { resourcesAPI } from '@/lib/api/resources';
+import { usePersistentState } from '@/lib/hooks/usePersistentState';
 import toast from 'react-hot-toast';
 
 interface StudentResourcesProps {
@@ -33,8 +34,8 @@ const types = [
 export default function StudentResources({ onResourceClick }: StudentResourcesProps) {
   const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedType, setSelectedType] = useState('all');
+  const [selectedCategory, setSelectedCategory] = usePersistentState('mindsage:student-resources:category', 'all');
+  const [selectedType, setSelectedType] = usePersistentState('mindsage:student-resources:type', 'all');
 
   useEffect(() => {
     loadResources();

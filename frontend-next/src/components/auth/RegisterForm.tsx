@@ -34,6 +34,15 @@ const SPECIALIZATIONS = [
   'General Mental Health'
 ];
 
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (typeof error !== 'object' || error === null || !('response' in error)) {
+    return fallback;
+  }
+
+  const response = (error as { response?: { data?: { message?: string } } }).response;
+  return response?.data?.message || fallback;
+};
+
 interface FormData {
   name: string;
   email: string;
@@ -120,6 +129,8 @@ export default function RegisterForm() {
     if (formData.role === 'student') {
       if (!formData.studentId) {
         newErrors.studentId = 'Student ID is required';
+      } else if (formData.studentId.trim().length < 5 || formData.studentId.trim().length > 20) {
+        newErrors.studentId = 'Student ID must be between 5 and 20 characters';
       }
       if (!formData.department) {
         newErrors.department = 'Department is required';
@@ -169,7 +180,30 @@ export default function RegisterForm() {
     setIsLoading(true);
 
     try {
-      const { confirmPassword, ...registerData } = formData;
+      const registerData = {
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        password: formData.password,
+        phone: formData.phone.trim(),
+        gender: formData.gender,
+        role: formData.role,
+        language: formData.language,
+        ...(formData.role === 'student'
+          ? {
+              studentId: formData.studentId.trim(),
+              department: formData.department,
+              year: formData.year,
+            }
+          : {
+              specialization: formData.specialization,
+              address: {
+                street: formData.address.street.trim(),
+                city: formData.address.city.trim(),
+                state: formData.address.state.trim(),
+                pincode: formData.address.pincode.trim(),
+              },
+            }),
+      };
       const response = await authAPI.register(registerData);
 
       if (response.status === "success") {
@@ -182,8 +216,8 @@ export default function RegisterForm() {
         toast.success('Registration successful! Check your email for verification');
         router.push(`/verify-email?email=${formData.email}`);
       }
-    } catch (error: any) {
-      const errorMsg = error.response?.data?.message || 'Registration failed';
+    } catch (error) {
+      const errorMsg = getErrorMessage(error, 'Registration failed');
       toast.error(errorMsg);
     } finally {
       setIsLoading(false);
@@ -365,6 +399,8 @@ export default function RegisterForm() {
                   onChange={handleChange}
                   placeholder="e.g. 2024CS001"
                   error={errors.studentId}
+                  minLength={5}
+                  maxLength={20}
                   required
                 />
                 <div className="grid grid-cols-2 gap-4">

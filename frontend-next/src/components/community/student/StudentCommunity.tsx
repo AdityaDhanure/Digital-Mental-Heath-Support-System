@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Post } from '@/types/community.types';
 import { communityAPI } from '@/lib/api/community';
 import { useAuth } from '@/lib/hooks/useAuth';
+import { usePersistentState } from '@/lib/hooks/usePersistentState';
 import toast from 'react-hot-toast';
 import { CommunityHeader, PostList, CreatePostModal, ReplyModal } from '@/components/community/shared';
 import { PlusIcon, SparklesIcon } from '@heroicons/react/24/outline';
@@ -23,8 +24,8 @@ const categories = [
 export default function StudentCommunity() {
   const { user } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [viewMode, setViewMode] = useState<'all' | 'my-posts'>('all');
+  const [selectedCategory, setSelectedCategory] = usePersistentState('mindsage:student-community:category', 'all');
+  const [viewMode, setViewMode] = usePersistentState<'all' | 'my-posts'>('mindsage:student-community:view', 'all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [replyToPost, setReplyToPost] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);

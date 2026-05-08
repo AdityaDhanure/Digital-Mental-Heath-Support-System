@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowLeftIcon, PhotoIcon, DocumentIcon, VideoCameraIcon, MusicalNoteIcon } from '@heroicons/react/24/outline';
+import { PhotoIcon, DocumentIcon, VideoCameraIcon, MusicalNoteIcon } from '@heroicons/react/24/outline';
 
 const resourceTypes = [
   { value: 'article', label: 'Article', icon: DocumentIcon },
@@ -51,6 +51,7 @@ const difficulties = [
 interface ResourceFormData {
   title: string;
   description: string;
+  type: string;
   category: string;
   language: string;
   targetAudience: string;
@@ -75,10 +76,10 @@ interface ResourceFormProps {
 }
 
 export default function ResourceForm({ initialData, onSubmit, isSubmitting, submitLabel }: ResourceFormProps) {
-  const [selectedType, setSelectedType] = useState(initialData?.title ? 'article' : 'article');
   const [formData, setFormData] = useState<ResourceFormData>({
     title: initialData?.title || '',
     description: initialData?.description || '',
+    type: initialData?.type || 'article',
     category: initialData?.category || 'general-wellness',
     language: initialData?.language || 'english',
     targetAudience: initialData?.targetAudience || 'all',
@@ -118,9 +119,9 @@ export default function ResourceForm({ initialData, onSubmit, isSubmitting, subm
                 <button
                   key={type.value}
                   type="button"
-                  onClick={() => setSelectedType(type.value)}
+                  onClick={() => setFormData({ ...formData, type: type.value })}
                   className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                    selectedType === type.value
+                    formData.type === type.value
                       ? 'border-purple-500 bg-purple-50 text-purple-700'
                       : 'border-gray-200 hover:border-gray-300 text-gray-600'
                   }`}
@@ -243,7 +244,7 @@ export default function ResourceForm({ initialData, onSubmit, isSubmitting, subm
               name="mediaUrl"
               value={formData.mediaUrl}
               onChange={handleChange}
-              placeholder={selectedType === 'video' ? 'https://youtube.com/...' : 'https://...'}
+              placeholder={formData.type === 'video' ? 'https://youtube.com/...' : 'https://...'}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
             />
           </div>

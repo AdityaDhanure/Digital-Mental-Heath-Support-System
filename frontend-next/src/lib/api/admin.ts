@@ -2,9 +2,99 @@
 import apiClient from './axios';
 import { API_CONFIG } from '@/lib/config/env';
 
+export interface AdminActivity {
+  id: string;
+  type: string;
+  label: string;
+  details: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  createdAt: string;
+  href: string;
+}
+
+export interface CountById {
+  _id: string;
+  count: number;
+}
+
+export interface DateBucket {
+  _id: {
+    year: number;
+    month: number;
+    day: number;
+  };
+  count: number;
+  avgMessages?: number;
+  postCount?: number;
+  totalReplies?: number;
+}
+
+export interface DashboardStatsData {
+  overview?: {
+    totalUsers?: number;
+    activeUsers?: number;
+    totalChats?: number;
+    totalBookings?: number;
+    totalResources?: number;
+    totalPosts?: number;
+    newUsersThisMonth?: number;
+  };
+  alerts?: {
+    pendingBookings?: number;
+    flaggedPosts?: number;
+  };
+  breakdown?: {
+    usersByRole?: CountById[];
+    bookingsByStatus?: CountById[];
+    chatSafetyMetrics?: CountById[];
+  };
+}
+
+export interface ChatAnalyticsData {
+  chatVolumeTrend?: DateBucket[];
+  riskDistribution?: CountById[];
+  sentimentDistribution?: CountById[];
+  highRiskCount?: number;
+  note?: string;
+}
+
+export interface BookingAnalyticsData {
+  bookingTrend?: DateBucket[];
+  statusDistribution?: CountById[];
+  concernCategories?: CountById[];
+  counselorUtilization?: Array<{
+    _id: string;
+    counselorName?: string;
+    totalBookings: number;
+    completedSessions: number;
+  }>;
+}
+
+export interface CommunityAnalyticsData {
+  postActivityTrend?: DateBucket[];
+  categoryDistribution?: CountById[];
+  moderationMetrics?: {
+    totalPosts?: number;
+    flaggedPosts?: number;
+    removedPosts?: number;
+  };
+}
+
+export interface UserForAnalysis {
+  _id: string;
+  name: string;
+  email: string;
+  role: 'student' | 'counselor' | 'admin';
+}
+
 export const adminAPI = {
   getDashboardStats: async (params?: { startDate?: string; endDate?: string }) => {
     const response = await apiClient.get('/admin/dashboard', { params });
+    return response.data;
+  },
+
+  getRecentActivity: async (limit = 12): Promise<{ status: string; data: { activities: AdminActivity[] } }> => {
+    const response = await apiClient.get('/admin/recent-activity', { params: { limit } });
     return response.data;
   },
 

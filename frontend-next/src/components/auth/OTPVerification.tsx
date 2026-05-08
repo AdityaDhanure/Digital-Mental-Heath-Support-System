@@ -112,7 +112,7 @@ export default function OTPVerification() {
         toast.success('Email verified successfully!');
 
         setTimeout(() => {
-          router.push('/dashboard');
+          router.push(user?.role === 'admin' ? '/admin/dashboard' : '/dashboard');
         }, 1500);
       }
     } catch (error: any) {

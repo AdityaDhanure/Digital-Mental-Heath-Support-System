@@ -82,8 +82,20 @@ export interface RegisterData {
   name: string;
   email: string;
   password: string;
-  role?: string;
+  phone: string;
+  gender: string;
+  role: 'student' | 'counselor';
   language?: string;
+  studentId?: string;
+  department?: string;
+  year?: string;
+  specialization?: string[];
+  address?: {
+    street: string;
+    city: string;
+    state: string;
+    pincode: string;
+  };
 }
 
 export interface AuthResponse {

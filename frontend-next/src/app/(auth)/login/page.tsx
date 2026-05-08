@@ -10,12 +10,12 @@ import LoginForm from '@/components/auth/LoginForm';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { isAuthenticated, isHydrated } = useAuthStore();
+  const { isAuthenticated, isHydrated, user } = useAuthStore();
 
   // If already authenticated, redirect to dashboard
   useEffect(() => {
     if (isHydrated && isAuthenticated) {
-      router.push('/dashboard');
+      router.push(user?.role === 'admin' ? '/admin/dashboard' : '/dashboard');
     }
   }, [isAuthenticated, isHydrated, router]);
 

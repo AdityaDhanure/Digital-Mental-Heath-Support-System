@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
 import { availabilityAPI } from '@/lib/api/availability';
+import { usePersistentState } from '@/lib/hooks/usePersistentState';
 import {
     CalendarIcon,
     ChevronLeftIcon,
@@ -19,7 +20,11 @@ import toast from 'react-hot-toast';
 import { format, addDays, subDays, startOfDay, isSameDay } from 'date-fns';
 
 export default function AvailabilitySettings() {
-    const [selectedDate, setSelectedDate] = useState(new Date());
+    const [selectedDateValue, setSelectedDateValue] = usePersistentState(
+        'mindsage:availability:selected-date',
+        format(new Date(), 'yyyy-MM-dd')
+    );
+    const selectedDate = useMemo(() => new Date(`${selectedDateValue}T00:00:00`), [selectedDateValue]);
     const [slots, setSlots] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -40,6 +45,10 @@ export default function AvailabilitySettings() {
     useEffect(() => {
         fetchAvailability(selectedDate);
     }, [selectedDate]);
+
+    const setSelectedDate = (date: Date) => {
+        setSelectedDateValue(format(date, 'yyyy-MM-dd'));
+    };
 
     const defaultSlots = [
         '09:00-10:00', '10:00-11:00', '11:00-12:00',

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useChatStore } from '@/store/chatStore';
 import { chatAPI } from '@/lib/api/chat';
+import { usePersistentState } from '@/lib/hooks/usePersistentState';
 import { ChatMessage } from '@/types/chat.types';
 import toast from 'react-hot-toast';
 import {
@@ -35,7 +36,7 @@ export default function StudentChat() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [showQuickActions, setShowQuickActions] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = usePersistentState('mindsage:chat:sidebar-open', true);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [renameSessionId, setRenameSessionId] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState('');

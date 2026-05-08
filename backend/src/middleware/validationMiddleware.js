@@ -70,6 +70,12 @@ export const validateRegistration = [
     .isInt({ min: 1, max: 4 }).withMessage('Year must be between 1 and 4')
     .toInt(),
 
+  body('studentId')
+    .if(body('role').equals('student'))
+    .trim()
+    .notEmpty().withMessage('Student ID is required for students')
+    .isLength({ min: 5, max: 20 }).withMessage('Student ID must be between 5 and 20 characters'),
+
   // Counselor-specific fields (conditional validation)
   body('specialization')
     .if(body('role').equals('counselor'))
@@ -113,11 +119,6 @@ export const validateRegistration = [
     .trim()
     .notEmpty().withMessage('Pincode is required for counselors')
     .matches(/^\d{6}$/).withMessage('Pincode must be a valid 6-digit number'),
-
-  body('studentId')
-    .optional()
-    .trim()
-    .isLength({ min: 5, max: 20 }).withMessage('Student ID must be between 5 and 20 characters'),
 
   handleValidationErrors
 ];

@@ -1,6 +1,6 @@
 # Mental Health AI Services
 
-A FastAPI-based AI service providing mental health support through LangChain, RAG (Retrieval-Augmented Generation), sentiment analysis, and safety monitoring. Integrates with the main backend to provide intelligent chat responses for students.
+A FastAPI-based service layer for the mental health platform. It includes the AI chat service for LangChain/RAG/safety monitoring and a lightweight analytics report service used by the main backend.
 
 ## Features
 
@@ -36,6 +36,11 @@ A FastAPI-based AI service providing mental health support through LangChain, RA
 - **Health Monitoring**
   - Service health checks
   - Status monitoring endpoint
+
+- **Analytics Report Service**
+  - Separate FastAPI app under `analytics_service/`
+  - Summarizes metrics supplied by the Express backend
+  - Generates operational recommendations without inventing platform totals
 
 ## Tech Stack
 
@@ -79,7 +84,7 @@ python-services/
 │   └── .env              # Environment config
 │
 ├── analytics_service/
-│   └── main.py            # Analytics service
+│   └── main.py            # Report generation service, default port 8002
 │
 ├── requirements.txt
 └── README.md
@@ -162,6 +167,11 @@ python-services/
    
    # Or with uvicorn directly
    uvicorn ai_service.main:app --host 0.0.0.0 --port 8001
+   ```
+
+   Optional analytics/report service:
+   ```bash
+   uvicorn analytics_service.main:app --host 0.0.0.0 --port 8002
    ```
 
 6. **Open API documentation**
@@ -354,6 +364,12 @@ ALLOWED_ORIGINS=https://your-app.vercel.app
 | POST | `/embeddings/create` | Create embeddings |
 | GET | `/embeddings/status` | Embedding status |
 
+### Analytics Report Service (`analytics_service`, default port 8002)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/health` | Analytics service health check |
+| POST | `/generate-report` | Generate a report from metrics supplied by the backend |
+
 ## Chat API Response
 
 ```json
@@ -433,7 +449,7 @@ rag_results = await rag_service.retrieve_context(
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `HOST` | Server host | 0.0.0.0 |
-| `PORT` | Server port | 8000 |
+| `PORT` | AI service port | 8001 |
 | `DEBUG` | Debug mode | false |
 | `OPENAI_API_KEY` | OpenAI key | - |
 | `GOOGLE_GENAI_API_KEY` | Google GenAI key | - |
@@ -480,14 +496,14 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 COPY . .
-EXPOSE 8000
+EXPOSE 8001
 
-CMD ["uvicorn", "ai_service.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "ai_service.main:app", "--host", "0.0.0.0", "--port", "8001"]
 ```
 
 ```bash
 docker build -t mental-health-ai .
-docker run -p 8000:8000 mental-health-ai
+docker run -p 8001:8001 mental-health-ai
 ```
 
 ## Deployment
@@ -570,10 +586,10 @@ https://your-service-domain/docs
 
 ```bash
 # Using Swagger UI
-http://localhost:8000/docs
+http://localhost:8001/docs
 
 # Using curl
-curl -X POST http://localhost:8000/chat \
+curl -X POST http://localhost:8001/chat \
   -H "Content-Type: application/json" \
   -d '{
     "message": "I have been feeling anxious lately",
@@ -588,13 +604,20 @@ curl -X POST http://localhost:8000/chat \
 The FastAPI service integrates with the Express.js backend:
 
 ```
-Backend (Port 5000)  -->  AI Service (Port 8000)
+Backend (Port 5000)  -->  AI Service (Port 8001)
      |
      v
 POST /api/chat
      |
      v
-http://localhost:8000/chat
+http://localhost:8001/chat
+```
+
+Backend analytics report generation can also call the analytics service:
+
+```
+Backend (Port 5000)  -->  Analytics Service (Port 8002)
+POST /generate-report
 ```
 
 ## Safety Guidelines
@@ -612,4 +635,5 @@ MIT
 ## Related Projects
 
 - [Backend API](../backend/README.md)
-- [Frontend](../frontend/README.md)
+- [Frontend](../frontend-next/README.md)
+

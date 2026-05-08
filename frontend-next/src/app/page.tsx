@@ -10,13 +10,13 @@ import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
 
 export default function Home() {
   const router = useRouter();
-  const { isAuthenticated, isHydrated } = useAuthStore();
+  const { isAuthenticated, isHydrated, user } = useAuthStore();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
     if (isHydrated && isAuthenticated) {
-      router.push('/dashboard');
+      router.push(user?.role === 'admin' ? '/admin/dashboard' : '/dashboard');
     }
   }, [isAuthenticated, isHydrated, router]);
 

@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
 import uvicorn
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -34,6 +34,29 @@ class ReportRequest(BaseModel):
     startDate: Optional[str] = None
     endDate: Optional[str] = None
     format: str = "json"
+    metrics: Optional[Dict[str, Any]] = None
+
+
+def utc_now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def build_recommendations(metrics: Dict[str, Any]) -> list[str]:
+    recommendations: list[str] = []
+    high_risk = metrics.get("highRiskDetections", 0) or 0
+    pending_bookings = metrics.get("pendingBookings", 0) or 0
+    flagged_posts = metrics.get("flaggedPosts", 0) or 0
+
+    if high_risk > 0:
+        recommendations.append("Review high-risk chat sessions and confirm escalation workflows are followed.")
+    if pending_bookings > 0:
+        recommendations.append("Review pending counseling bookings to reduce student wait time.")
+    if flagged_posts > 0:
+        recommendations.append("Moderate flagged community posts to keep the support space safe.")
+    if not recommendations:
+        recommendations.append("No urgent operational actions detected for the supplied metrics.")
+
+    return recommendations
 
 
 # Routes:
@@ -44,7 +67,7 @@ async def health_check():
         "status": "healthy",
         "service": "Analytics Service",
         "version": "1.0.0",
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": utc_now_iso()
     }
 
 # 2. =================================================================================================== #
@@ -54,26 +77,18 @@ async def generate_report(request: ReportRequest):
     try:
         logger.info(f"Generating {request.reportType} report")
         
-        # Placeholder for actual analytics logic
+        metrics = request.metrics or {}
         report_data = {
             "reportType": request.reportType,
-            "generatedAt": datetime.utcnow().isoformat(),
+            "generatedAt": utc_now_iso(),
             "period": {
                 "start": request.startDate,
                 "end": request.endDate
             },
-            "summary": {
-                "totalInteractions": 1250,
-                "averageSentiment": "neutral",
-                "highRiskDetections": 12,
-                "counselingBookings": 45
-            },
-            "trends": [],
-            "recommendations": [
-                "Increase counseling capacity during exam periods",
-                "Enhance mental health awareness programs",
-                "Monitor stress levels closely"
-            ]
+            "summary": metrics,
+            "trends": metrics.get("trends", []),
+            "recommendations": build_recommendations(metrics),
+            "note": "This service summarizes metrics supplied by the primary backend; it does not invent platform totals."
         }
         
         return {

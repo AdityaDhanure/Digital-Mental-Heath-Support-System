@@ -101,8 +101,8 @@ export const RATE_LIMIT_CONFIG = {
   // Rate limit window in milliseconds (default: 15 minutes)
   WINDOW_MS: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10),
   
-  // Max requests per window (default: 100)
-  MAX_REQUESTS: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10),
+  // Max requests per window (default: 500 — increased to support admin dashboard parallel calls)
+  MAX_REQUESTS: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '500', 10),
 };
 
 // ============================================================

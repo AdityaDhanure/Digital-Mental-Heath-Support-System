@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { resourcesAPI } from '@/lib/api/resources';
+import { usePersistentState } from '@/lib/hooks/usePersistentState';
 import { ResourcesHeader, ResourceGrid } from '@/components/resources/shared';
 import { Resource } from '@/types/resource.types';
 import toast from 'react-hot-toast';
@@ -26,8 +27,8 @@ export default function CounselorResources() {
   const { user } = useAuthStore();
   const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<'all' | 'my-uploads'>('all');
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [viewMode, setViewMode] = usePersistentState<'all' | 'my-uploads'>('mindsage:counselor-resources:view', 'all');
+  const [selectedCategory, setSelectedCategory] = usePersistentState('mindsage:counselor-resources:category', 'all');
 
   useEffect(() => {
     resourcesAPI.fixUnpublishedResources()

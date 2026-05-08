@@ -1,15 +1,15 @@
 'use client';
 
 // Counselor Dashboard Page
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/authStore';
 import { bookingAPI } from '@/lib/api/booking';
+import type { Booking } from '@/types/booking.types';
 import {
   StatCard,
   WelcomeHeader,
   BookingCard,
-  WellnessTip,
   SectionHeader,
   EmptyState,
 } from '@/components/dashboard/shared';
@@ -21,47 +21,62 @@ import {
   BookOpenIcon,
   DocumentTextIcon,
   BellIcon,
-  ArrowRightIcon,
 } from '@heroicons/react/24/outline';
 
 export default function CounselorDashboard() {
   const { user } = useAuthStore();
-  const [bookings, setBookings] = useState<any>({ upcoming: [], pending: [], recent: [] });
+  const hasLoadedRef = useRef(false);
+  const [bookings, setBookings] = useState<{ upcoming: Booking[]; pending: Booking[]; recent: Booking[] }>({
+    upcoming: [],
+    pending: [],
+    recent: [],
+  });
   const [stats, setStats] = useState({ upcoming: 0, pending: 0, completed: 0, students: 0 });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadDashboardData();
-  }, []);
-
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     try {
       setLoading(true);
-      const [upcomingRes, pendingRes, completedRes] = await Promise.all([
-        bookingAPI.getAllBookings({ status: 'confirmed', limit: 5 }),
-        bookingAPI.getAllBookings({ status: 'pending', limit: 5 }),
-        bookingAPI.getAllBookings({ status: 'completed', limit: 10 }),
-      ]);
+      const response = await bookingAPI.getAllBookings({ limit: 100 });
+      const allBookings: Booking[] = response?.data?.bookings || [];
+      const upcomingBookings = allBookings
+        .filter((booking) => booking.status === 'confirmed')
+        .slice(0, 5);
+      const pendingBookings = allBookings
+        .filter((booking) => booking.status === 'pending')
+        .slice(0, 5);
+      const completedBookings = allBookings
+        .filter((booking) => booking.status === 'completed');
+      const uniqueStudentIds = new Set(
+        allBookings
+          .map((booking) => booking.student?._id)
+          .filter(Boolean)
+      );
 
       setBookings({
-        upcoming: upcomingRes?.data?.bookings || [],
-        pending: pendingRes?.data?.bookings || [],
-        recent: completedRes?.data?.bookings?.slice(0, 5) || [],
+        upcoming: upcomingBookings,
+        pending: pendingBookings,
+        recent: completedBookings.slice(0, 5),
       });
       
       setStats({
-        upcoming: upcomingRes?.data?.total || 0,
-        pending: pendingRes?.data?.total || 0,
-        completed: completedRes?.data?.total || 0,
-        students: new Set((upcomingRes?.data?.bookings || []).map((b: any) => b.student?._id)).size +
-                   new Set((pendingRes?.data?.bookings || []).map((b: any) => b.student?._id)).size,
+        upcoming: allBookings.filter((booking) => booking.status === 'confirmed').length,
+        pending: allBookings.filter((booking) => booking.status === 'pending').length,
+        completed: completedBookings.length,
+        students: uniqueStudentIds.size,
       });
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (hasLoadedRef.current) return;
+    hasLoadedRef.current = true;
+    loadDashboardData();
+  }, [loadDashboardData]);
 
   return (
     <div className="space-y-6 pb-20">
@@ -118,7 +133,7 @@ export default function CounselorDashboard() {
           </div>
         ) : bookings.pending.length > 0 ? (
           <div className="space-y-3">
-            {bookings.pending.map((booking: any) => (
+            {bookings.pending.map((booking) => (
               <BookingCard key={booking._id} booking={booking} userRole={user?.role} />
             ))}
           </div>
@@ -149,7 +164,7 @@ export default function CounselorDashboard() {
           </div>
         ) : bookings.upcoming.length > 0 ? (
           <div className="space-y-3">
-            {bookings.upcoming.map((booking: any) => (
+            {bookings.upcoming.map((booking) => (
               <BookingCard key={booking._id} booking={booking} userRole={user?.role} />
             ))}
           </div>
@@ -212,7 +227,7 @@ export default function CounselorDashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {bookings.recent.map((booking: any) => (
+                {bookings.recent.map((booking) => (
                   <tr key={booking._id} className="hover:bg-gray-50">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
@@ -223,7 +238,7 @@ export default function CounselorDashboard() {
                         </div>
                         <div>
                           <p className="text-sm font-medium text-gray-900">{booking.student?.name || 'Student'}</p>
-                          <p className="text-xs text-gray-500">{booking.student?.studentId || ''}</p>
+                          <p className="text-xs text-gray-500">{booking.student?.studentProfile?.studentId || ''}</p>
                         </div>
                       </div>
                     </td>
@@ -260,7 +275,14 @@ export default function CounselorDashboard() {
 }
 
 // Quick Link Card Component
-function QuickLinkCard({ icon: Icon, title, description, href }: any) {
+interface QuickLinkCardProps {
+  icon: React.ElementType;
+  title: string;
+  description: string;
+  href: string;
+}
+
+function QuickLinkCard({ icon: Icon, title, description, href }: QuickLinkCardProps) {
   return (
     <Link href={href}>
       <div className="bg-white rounded-xl p-4 border border-gray-100 hover:shadow-md hover:border-purple-200 transition-all group">
